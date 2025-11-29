@@ -56,12 +56,10 @@ public class AuthController {
                     .body(new ErrorResponse(e.getMessage()));
         }
     }
-}
 
-class ErrorResponse {
-    public String message;
-
-    public ErrorResponse(String message) {
-        this.message = message;
+    @GetMapping("/hello")
+    public String hello(){
+        return "hello world";
     }
 }
+

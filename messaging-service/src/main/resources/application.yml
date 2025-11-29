@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: messaging-service
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/skillmatch_messages
+    username: skillmatch
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  redis:
+    host: redis
+    port: 6379
+
+server:
+  port: 8086
+  servlet:
+    context-path: /api/messages

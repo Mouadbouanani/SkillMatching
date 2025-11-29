@@ -19,5 +19,5 @@ public class UserRegistrationDTO {
 
     private String phoneNumber;
 
-    private String role; // CLIENT ou PROVIDER
+    private String role; // CLIENT ou PROVIDER ou Admin
 }

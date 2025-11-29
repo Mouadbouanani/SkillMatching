@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 @Service
 public class FirebaseService {
 
@@ -48,5 +50,10 @@ public class FirebaseService {
                 new UserRecord.UpdateRequest(uid)
                         .setPassword(newPassword)
         );
+    }
+
+    public void setCustomClaims(String uid, Map<String, Object> claims) throws FirebaseAuthException {
+        FirebaseAuth.getInstance().setCustomUserClaims(uid, claims);
+        logger.info("Custom claims set for user: {}", uid);
     }
 }
