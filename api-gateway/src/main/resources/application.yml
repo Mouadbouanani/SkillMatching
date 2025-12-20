@@ -1,0 +1,118 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        # Auth Service Routes
+        - id: auth-service
+          uri: http://user-service:8081
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: AuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth
+
+        # Profile Service Routes
+        - id: profile-service
+          uri: http://profile-service:8082
+          predicates:
+            - Path=/api/profiles/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 100
+                  burstCapacity: 200
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: profileServiceCircuitBreaker
+
+        # Job Service Routes
+        - id: job-service
+          uri: http://job-service:8083
+          predicates:
+            - Path=/api/jobs/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: jobServiceCircuitBreaker
+
+        # Matching Service Routes
+        - id: matching-service
+          uri: http://matching-service:8084
+          predicates:
+            - Path=/api/matches/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter:
+                  replenishRate: 50
+                  burstCapacity: 100
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: matchingServiceCircuitBreaker
+
+        # Notification Service Routes
+        - id: notification-service
+          uri: http://notification-service:8085
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - name: AuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: notificationServiceCircuitBreaker
+
+        # Messaging Service Routes
+        - id: messaging-service
+          uri: http://messaging-service:8086
+          predicates:
+            - Path=/api/messages/**
+          filters:
+            - name: AuthenticationFilter
+            - name: CircuitBreaker
+              args:
+                name: messagingServiceCircuitBreaker
+
+      default-filters:
+        - name: GlobalLoggingFilter
+        - name: CORSFilter
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+logging:
+  level:
+    root: INFO
+    com.skillmatch: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-credentials.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,circuitbreakers
+  endpoint:
+    health:
+      show-details: always

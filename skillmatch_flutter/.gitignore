@@ -34,6 +34,22 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/android/gradle/wrapper/dists/
+/android/gradle/wrapper/caches/
+
+# Gradle
+**/.gradle/
+**/build/
+**/gradle/wrapper/dists/
+**/gradle/wrapper/caches/
+
+# Flutter
+**/.dart_tool/
+**/android/.gradle/
+**/android/build/
+**/ios/Pods/
+**/ios/.symlinks/
+
 
 # Symbolication related
 app.*.symbols
@@ -45,3 +61,4 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+

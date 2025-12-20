@@ -30,8 +30,10 @@ build/
 !**/src/test/**/build/
 
 
+# Firebase / secrets
+**/firebase-service-account.json
 **/firebase-credentials.json
-
+**/*service-account*.json
 
 ### VS Code ###
 .vscode/

@@ -33,6 +33,7 @@ public class AuthController {
         }
     }
 
+
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String firebaseUid) {
         try {

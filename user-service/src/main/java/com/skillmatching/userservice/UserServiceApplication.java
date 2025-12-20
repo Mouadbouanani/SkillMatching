@@ -6,24 +6,27 @@ import com.google.firebase.FirebaseOptions;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 @SpringBootApplication
 public class UserServiceApplication {
+
 
 	public static void main(String[] args) {
 		SpringApplication.run(UserServiceApplication.class, args);
 	}
 	@Bean
 	public FirebaseApp firebaseApp() throws IOException {
-		FileInputStream serviceAccount =
-				new FileInputStream("src/main/resources/firebase-service-account.json");
+		InputStream serviceAccount =
+				new ClassPathResource("firebase-service-account.json").getInputStream();
 
 		FirebaseOptions options = FirebaseOptions.builder()
-				.setCredentials(GoogleCredentials.fromStream(serviceAccount))
+				.setCredentials(GoogleCredentials.getApplicationDefault())
 				.build();
+
 
 		// If already initialized, just return it
 		if (FirebaseApp.getApps().isEmpty()) {
