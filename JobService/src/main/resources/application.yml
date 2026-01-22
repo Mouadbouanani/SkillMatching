@@ -22,6 +22,6 @@ spring:
       group-id: job-service-group
 
 server:
-  port: 8083
+  port: 8084
   servlet:
     context-path: /api/jobs

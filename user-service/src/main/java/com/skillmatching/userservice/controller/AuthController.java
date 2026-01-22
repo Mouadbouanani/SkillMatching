@@ -8,6 +8,7 @@ import com.skillmatching.userservice.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
@@ -35,7 +36,8 @@ public class AuthController {
 
 
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser(@RequestHeader("Authorization") String firebaseUid) {
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        String firebaseUid = authentication.getName();
         try {
             UserDTO user = authService.getUserByFirebaseUid(firebaseUid);
             return ResponseEntity.ok(user);

@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-class JobSkill {
+public class JobSkill {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -26,5 +26,11 @@ class JobSkill {
     @Column(nullable = false)
     private Integer requiredLevel;
 
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
 }

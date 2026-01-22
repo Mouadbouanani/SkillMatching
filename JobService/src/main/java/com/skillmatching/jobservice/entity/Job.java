@@ -18,7 +18,7 @@ public class Job {
     private String id;
 
     @Column(nullable = false)
-    private String requesterId;
+    private String requesterId; // Firebase UID
 
     @Column(nullable = false)
     private String title;
@@ -29,8 +29,8 @@ public class Job {
     @Column(nullable = false)
     private BigDecimal budget;
 
-    @Column(columnDefinition = "VARCHAR(3) DEFAULT 'USD'")
-    private String currency;
+    @Column(length = 3)
+    private String currency = "MAD";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -41,7 +41,7 @@ public class Job {
     private LocalDateTime deadline;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "job_id")
+    @JoinColumn(name = "job_id") // FK in job_skills table
     private List<JobSkill> requiredSkills;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -63,6 +63,9 @@ public class Job {
     }
 
     public enum JobStatus {
-        OPEN, IN_PROGRESS, COMPLETED, CANCELLED
+        OPEN,
+        IN_PROGRESS,
+        COMPLETED,
+        CANCELLED
     }
 }

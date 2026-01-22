@@ -1,41 +1,31 @@
 package com.skillmatching.messagingservice.service;
+
+import com.google.cloud.firestore.DocumentReference;
 import com.skillmatching.messagingservice.entity.Message;
-import com.skillmatching.messagingservice.repository.MessageRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.data.redis.core.RedisTemplate;
+
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
-public class MessagingService {
+public class MessagingService implements MessagingServiceInterface {
 
     @Autowired
-    private MessageRepository messageRepository;
+    private MessagingServiceInterface messagingServiceInterface;
 
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
-
-    public Message sendMessage(Message message) {
-        Message saved = messageRepository.save(message);
-
-        // Store in Redis for real-time retrieval
-        redisTemplate.opsForList().rightPush(
-                "conversation:" + message.getConversationId(),
-                saved.getId()
-        );
-
-        return saved;
+    @Override
+    public CompletableFuture<DocumentReference> sendMessage(Message message) {
+        return messagingServiceInterface.sendMessage(message);
     }
 
-    public List<Message> getConversationMessages(String conversationId) {
-        return messageRepository.findByConversationIdOrderBySentAtDesc(conversationId);
+    @Override
+    public CompletableFuture<List<Message>> getConversationMessages(String conversationId) {
+        return messagingServiceInterface.getConversationMessages(conversationId);
     }
 
-    public Message markAsRead(String messageId) {
-        Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new RuntimeException("Message not found"));
-        message.setIsRead(true);
-        message.setReadAt(java.time.LocalDateTime.now());
-        return messageRepository.save(message);
+    @Override
+    public CompletableFuture<Message> markAsRead(String messageId) {
+        return messagingServiceInterface.markAsRead(messageId);
     }
 }
