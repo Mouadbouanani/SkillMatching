@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: job-service
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/skillmatch_jobs
+    username: skillmatch
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      bootstrap-servers: kafka:9092
+      group-id: job-service-group
+
+server:
+  port: 8084
+  servlet:
+    context-path: /api/jobs

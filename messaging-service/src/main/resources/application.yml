@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: messaging-service
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# Firebase Configuration
+firebase:
+  credentials-location: classpath:secrets/firebase-service-account.json
+  project-id: ${FIREBASE_PROJECT_ID:skillmatching-86b8d}
+
+server:
+  port: 8086
+  servlet:
+    context-path: /api/messages

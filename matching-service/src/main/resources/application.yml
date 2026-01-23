@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: matching-service
+
+  datasource:
+    url: jdbc:postgresql://postgres:5432/skillmatching_matches
+    username: skillmatching
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: matching-service-group
+
+server:
+  port: 8084
+  servlet:
+    context-path: /api/matches

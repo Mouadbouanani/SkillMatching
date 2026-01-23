@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: notification-service
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: notification-service-group
+
+server:
+  port: 8085
+  servlet:
+    context-path: /api/notifications
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-credentials.json}
