@@ -4,7 +4,7 @@ spring:
 
   data:
     mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/skillmatch_profiles}
+      uri: mongodb+srv://tahamoum68_db_user:KtnhlWfwxWDWbR4g@cluster0.ncrj3pl.mongodb.net/skillmatch_profiles?retryWrites=true&w=majority
       database: skillmatch_profiles
       auto-index-creation: true
 
@@ -21,8 +21,6 @@ spring:
 
 server:
   port: 8082
-  servlet:
-    context-path: /api/profiles
 
 logging:
   level:

@@ -102,9 +102,6 @@ public class ProfileService {
         if (skill.getCreatedAt() == null) {
             skill.setCreatedAt(java.time.LocalDateTime.now());
         }
-        if (skill.getId() == null) {
-            skill.setId(java.util.UUID.randomUUID().toString());
-        }
 
         profile.getSkills().add(skill);
         profile.preUpdate();

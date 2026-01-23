@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Field;
-
+import java.util.UUID;
 import java.time.LocalDateTime;
 
 // Skill Entity - Embedded in Profile document
@@ -14,9 +13,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Skill {
-
-    @Id
-    private String id;
 
     @Field("skill_id")
     @JsonProperty("skillId")
@@ -42,8 +38,8 @@ public class Skill {
     @JsonProperty("createdAt")
     private LocalDateTime createdAt;
 
-    public Skill(String skillId, String skillName, Integer proficiencyLevel) {
-        this.skillId = skillId;
+    public Skill(String skillName, Integer proficiencyLevel) {
+        this.skillId = UUID.randomUUID().toString(); 
         this.skillName = skillName;
         this.proficiencyLevel = proficiencyLevel;
         this.endorsementCount = 0;

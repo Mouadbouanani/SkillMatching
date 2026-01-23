@@ -10,8 +10,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @RestController
-@RequestMapping
+@RequestMapping("/api/profiles")
 @CrossOrigin(origins = "*")
 public class ProfileController {
 
@@ -44,12 +47,12 @@ public class ProfileController {
         }
     }
 
-    @PutMapping("/{profileId}")
+    @PutMapping("/{userId}")
     public ResponseEntity<?> updateProfile(
-            @PathVariable String profileId,
+            @PathVariable String userId,
             @RequestBody Profile profileUpdate,
             Authentication authentication) {
-        Profile existing = profileService.getProfileById(profileId);
+        Profile existing = profileService.getProfileByUserId(userId);
 
         // Verify that the user owns this profile or is an admin
         String currentUserId = authentication.getName();
@@ -60,28 +63,54 @@ public class ProfileController {
                     .body("You can only update your own profile or you need admin privileges");
         }
 
-        Profile updated = profileService.updateProfile(profileId, profileUpdate);
+        Profile updated = profileService.updateProfile(existing.getId(), profileUpdate);
         return ResponseEntity.ok(updated);
     }
 
-    @PostMapping("/{profileId}/skills")
+    @PostMapping("/{userId}/skills")
     public ResponseEntity<?> addSkill(
-            @PathVariable String profileId,
+            @PathVariable String userId,
             @RequestBody Skill skill,
             Authentication authentication) {
-        Profile existing = profileService.getProfileById(profileId);
+        System.out.println("=== ADD SKILL DEBUG ===");
+        System.out.println("UserId: " + userId);
+        System.out.println("Skill received: " + skill);
+        System.out.println("SkillName: " + skill.getSkillName());
+        System.out.println("ProficiencyLevel: " + skill.getProficiencyLevel());
+        System.out.println("YearsExperience: " + skill.getYearsExperience());
 
-        // Verify that the user owns this profile or is an admin
-        String currentUserId = authentication.getName();
-        if (!existing.getUserId().equals(currentUserId) &&
-            !authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body("You can only add skills to your own profile or you need admin privileges");
+        try {
+            Profile existing = profileService.getProfileByUserId(userId);
+
+            String currentUserId = authentication.getName();
+            if (!existing.getUserId().equals(currentUserId) &&
+                !authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("You can only add skills to your own profile or you need admin privileges");
+            }
+
+            // ✅ Initialiser les champs manquants
+            if (skill.getSkillId() == null || skill.getSkillId().isEmpty()) {
+                skill.setSkillId(UUID.randomUUID().toString());
+            }
+            if (skill.getCreatedAt() == null) {
+                skill.setCreatedAt(LocalDateTime.now());
+            }
+            if (skill.getEndorsementCount() == null) {
+                skill.setEndorsementCount(0);
+            }
+
+            profileService.addSkill(existing.getId(), skill);
+            return ResponseEntity.ok("Skill added successfully");
+            
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Profile not found: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Error adding skill: " + e.getMessage());
         }
-
-        profileService.addSkill(profileId, skill);
-        return ResponseEntity.ok("Skill added");
     }
 
     // Admin endpoint to get all profiles
