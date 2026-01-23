@@ -84,7 +84,6 @@ public class AuthService {
         dto.setFirebaseUid(user.getFirebaseUid());
         dto.setRole(user.getRole().toString());
         dto.setEmailVerified(user.getEmailVerified());
-        dto.setActive(user.getActive());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;

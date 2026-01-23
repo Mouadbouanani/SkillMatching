@@ -9,6 +9,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ProfileService {
 
@@ -50,6 +52,10 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
     }
 
+    public List<Profile> getAllProfiles() {
+        return profileRepository.findAll();
+    }
+
     @CacheEvict(value = "profiles", key = "#profileId")
     public Profile updateProfile(String profileId, Profile profileUpdate) {
         Profile profile = profileRepository.findById(profileId)
@@ -87,11 +93,11 @@ public class ProfileService {
     public void addSkill(String profileId, Skill skill) {
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
-        
+
         if (profile.getSkills() == null) {
             profile.setSkills(new java.util.ArrayList<>());
         }
-        
+
         // Initialize skill if needed
         if (skill.getCreatedAt() == null) {
             skill.setCreatedAt(java.time.LocalDateTime.now());
@@ -99,7 +105,7 @@ public class ProfileService {
         if (skill.getId() == null) {
             skill.setId(java.util.UUID.randomUUID().toString());
         }
-        
+
         profile.getSkills().add(skill);
         profile.preUpdate();
         Profile updated = profileRepository.save(profile);
@@ -109,6 +115,21 @@ public class ProfileService {
         } catch (Exception e) {
             // Redis not available, continue without cache
             System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+        }
+    }
+
+    public void deleteProfile(String profileId) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+
+        profileRepository.deleteById(profileId);
+
+        // Remove from cache if present
+        try {
+            redisTemplate.delete("profile:" + profileId);
+        } catch (Exception e) {
+            // Redis not available, continue without cache
+            System.out.println("Warning: Redis not available, skipping cache removal: " + e.getMessage());
         }
     }
 }

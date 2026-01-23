@@ -7,11 +7,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
@@ -37,11 +41,25 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
             String uid = decodedToken.getUid();
 
+            // Extract role from custom claims
+            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            Map<String, Object> claims = decodedToken.getClaims();
+            Object roleClaim = claims.get("role");
+
+            if (roleClaim != null) {
+                String role = roleClaim.toString().toUpperCase();
+                // Add ROLE_ prefix to match Spring Security convention
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+
+                // Also add the raw role as an authority
+                authorities.add(new SimpleGrantedAuthority(role));
+            }
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             uid,
                             null,
-                            Collections.emptyList()
+                            authorities
                     );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
