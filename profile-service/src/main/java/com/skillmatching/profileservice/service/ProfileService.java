@@ -4,6 +4,7 @@ import com.skillmatching.profileservice.entity.Profile;
 import com.skillmatching.profileservice.entity.Skill;
 import com.skillmatching.profileservice.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,23 @@ public class ProfileService {
     private RedisTemplate<String, Profile> redisTemplate;
 
     public Profile createProfile(Profile profile) {
+        // Initialize skills list if null
+        if (profile.getSkills() == null) {
+            profile.setSkills(new java.util.ArrayList<>());
+        }
+        // Check if profile already exists for this user
+        if (profileRepository.existsByUserId(profile.getUserId())) {
+            throw new RuntimeException("Profile already exists for this user");
+        }
+        profile.prePersist();
         Profile saved = profileRepository.save(profile);
-        redisTemplate.opsForValue().set("profile:" + saved.getId(), saved);
+        // Try to cache in Redis, but don't fail if Redis is not available
+        try {
+            redisTemplate.opsForValue().set("profile:" + saved.getId(), saved);
+        } catch (Exception e) {
+            // Redis not available, continue without cache
+            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+        }
         return saved;
     }
 
@@ -29,6 +45,12 @@ public class ProfileService {
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
     }
 
+    public Profile getProfileById(String profileId) {
+        return profileRepository.findById(profileId)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+    }
+
+    @CacheEvict(value = "profiles", key = "#profileId")
     public Profile updateProfile(String profileId, Profile profileUpdate) {
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
@@ -42,16 +64,51 @@ public class ProfileService {
         if (profileUpdate.getAvailability() != null) {
             profile.setAvailability(profileUpdate.getAvailability());
         }
+        if (profileUpdate.getLocation() != null) {
+            profile.setLocation(profileUpdate.getLocation());
+        }
+        if (profileUpdate.getProfilePictureUrl() != null) {
+            profile.setProfilePictureUrl(profileUpdate.getProfilePictureUrl());
+        }
 
+        profile.preUpdate();
         Profile updated = profileRepository.save(profile);
-        redisTemplate.opsForValue().set("profile:" + updated.getId(), updated);
+        // Try to cache in Redis, but don't fail if Redis is not available
+        try {
+            redisTemplate.opsForValue().set("profile:" + updated.getId(), updated);
+        } catch (Exception e) {
+            // Redis not available, continue without cache
+            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+        }
         return updated;
     }
 
+    @CacheEvict(value = "profiles", allEntries = true)
     public void addSkill(String profileId, Skill skill) {
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
+        
+        if (profile.getSkills() == null) {
+            profile.setSkills(new java.util.ArrayList<>());
+        }
+        
+        // Initialize skill if needed
+        if (skill.getCreatedAt() == null) {
+            skill.setCreatedAt(java.time.LocalDateTime.now());
+        }
+        if (skill.getId() == null) {
+            skill.setId(java.util.UUID.randomUUID().toString());
+        }
+        
         profile.getSkills().add(skill);
-        profileRepository.save(profile);
+        profile.preUpdate();
+        Profile updated = profileRepository.save(profile);
+        // Try to cache in Redis, but don't fail if Redis is not available
+        try {
+            redisTemplate.opsForValue().set("profile:" + updated.getId(), updated);
+        } catch (Exception e) {
+            // Redis not available, continue without cache
+            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+        }
     }
 }

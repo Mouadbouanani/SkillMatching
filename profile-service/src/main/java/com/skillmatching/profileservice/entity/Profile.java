@@ -1,63 +1,96 @@
 package com.skillmatching.profileservice.entity;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "profiles")
+@Document(collection = "profiles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Profile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(unique = true, nullable = false)
+    @Indexed(unique = true)
+    @Field("user_id")
+    @JsonProperty("userId")
     private String userId;
 
-    @Column(nullable = false)
+    @Field("display_name")
+    @JsonProperty("displayName")
     private String displayName;
 
     private String bio;
 
-    @Column(columnDefinition = "NUMERIC(3,2) DEFAULT 0.0")
-    private Double rating;
+    private Double rating = 0.0;
 
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
-    private Integer ratingCount;
+    @Field("rating_count")
+    @JsonProperty("ratingCount")
+    private Integer ratingCount = 0;
 
     private String location;
 
-    @Column(columnDefinition = "jsonb")
-    private String availability;
+    private String availability; // JSON string or can be a Map
 
+    @Field("profile_picture_url")
+    @JsonProperty("profilePictureUrl")
     private String profilePictureUrl;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "profile_id")
-    private List<Skill> skills;
+    private List<Skill> skills = new ArrayList<>();
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreatedDate
+    @Field("created_at")
+    @JsonProperty("createdAt")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+    @LastModifiedDate
+    @Field("updated_at")
+    @JsonProperty("updatedAt")
     private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-        rating = 0.0;
-        ratingCount = 0;
+    // Lifecycle callback methods for MongoDB
+    @org.springframework.data.annotation.PersistenceConstructor
+    public Profile(String userId, String displayName) {
+        this.userId = userId;
+        this.displayName = displayName;
+        this.rating = 0.0;
+        this.ratingCount = 0;
+        this.skills = new ArrayList<>();
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    // Pre-save callback
+    public void prePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+        if (this.updatedAt == null) {
+            this.updatedAt = LocalDateTime.now();
+        }
+        if (this.rating == null) {
+            this.rating = 0.0;
+        }
+        if (this.ratingCount == null) {
+            this.ratingCount = 0;
+        }
+        if (this.skills == null) {
+            this.skills = new ArrayList<>();
+        }
+    }
+
+    // Pre-update callback
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
 

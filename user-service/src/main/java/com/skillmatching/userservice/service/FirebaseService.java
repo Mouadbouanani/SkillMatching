@@ -56,4 +56,10 @@ public class FirebaseService {
         FirebaseAuth.getInstance().setCustomUserClaims(uid, claims);
         logger.info("Custom claims set for user: {}", uid);
     }
+
+    public String createCustomToken(String uid) throws FirebaseAuthException {
+        String customToken = FirebaseAuth.getInstance().createCustomToken(uid);
+        logger.info("Custom token created for user: {}", uid);
+        return customToken;
+    }
 }

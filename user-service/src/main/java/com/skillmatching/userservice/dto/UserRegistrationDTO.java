@@ -14,5 +14,10 @@ public class UserRegistrationDTO {
     @Size(min = 6, message = "Password minimum 6 caracteres")
     private String password;
 
+    @NotBlank(message = "Display name requis")
+    private String displayName;
+
+    private String phoneNumber;
+
     private String role; // CLIENT ou PROVIDER ou Admin
 }

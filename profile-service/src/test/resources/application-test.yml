@@ -1,0 +1,15 @@
+spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/skillmatch_profiles_test}
+  redis:
+    host: localhost
+    port: 6379
+  cache:
+    type: simple
+
+logging:
+  level:
+    root: INFO
+    com.skillmatching: DEBUG
+

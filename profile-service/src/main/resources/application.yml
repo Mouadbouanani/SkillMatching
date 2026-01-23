@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: profile-service
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/skillmatch_profiles}
+      database: skillmatch_profiles
+      auto-index-creation: true
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000ms
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000 # 1 hour
+
+server:
+  port: 8082
+  servlet:
+    context-path: /api/profiles
+
+logging:
+  level:
+    root: INFO
+    com.skillmatching: DEBUG
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-credentials.json}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: always
+

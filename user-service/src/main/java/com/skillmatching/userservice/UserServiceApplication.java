@@ -20,18 +20,29 @@ public class UserServiceApplication {
 	}
 	@Bean
 	public FirebaseApp firebaseApp() throws IOException {
-		InputStream serviceAccount =
-				new ClassPathResource("firebase-service-account.json").getInputStream();
+		try {
+			InputStream serviceAccount =
+					new ClassPathResource("firebase-service-account.json").getInputStream();
 
-		FirebaseOptions options = FirebaseOptions.builder()
-				.setCredentials(GoogleCredentials.getApplicationDefault())
-				.build();
+			FirebaseOptions options = FirebaseOptions.builder()
+					.setCredentials(GoogleCredentials.fromStream(serviceAccount))
+					.build();
 
+			// If already initialized, just return it
+			if (FirebaseApp.getApps().isEmpty()) {
+				return FirebaseApp.initializeApp(options);
+			}
+			return FirebaseApp.getInstance();
+		} catch (Exception e) {
+			// Fallback to default credentials if file not found
+			FirebaseOptions options = FirebaseOptions.builder()
+					.setCredentials(GoogleCredentials.getApplicationDefault())
+					.build();
 
-		// If already initialized, just return it
-		if (FirebaseApp.getApps().isEmpty()) {
-			return FirebaseApp.initializeApp(options);
+			if (FirebaseApp.getApps().isEmpty()) {
+				return FirebaseApp.initializeApp(options);
+			}
+			return FirebaseApp.getInstance();
 		}
-		return FirebaseApp.getInstance();
 	}
 }

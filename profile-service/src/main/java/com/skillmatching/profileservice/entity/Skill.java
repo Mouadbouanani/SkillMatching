@@ -1,36 +1,52 @@
 package com.skillmatching.profileservice.entity;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 
-// Skill Entity
-@Entity
-@Table(name = "profile_skills")
+// Skill Entity - Embedded in Profile document
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Skill {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
+    @Field("skill_id")
+    @JsonProperty("skillId")
     private String skillId;
 
+    @Field("skill_name")
+    @JsonProperty("skillName")
     private String skillName;
 
-    @Column(nullable = false)
+    @Field("proficiency_level")
+    @JsonProperty("proficiencyLevel")
     private Integer proficiencyLevel;
 
+    @Field("years_experience")
+    @JsonProperty("yearsExperience")
     private Integer yearsExperience;
 
-    @Column(columnDefinition = "INTEGER DEFAULT 0")
-    private Integer endorsementCount;
+    @Field("endorsement_count")
+    @JsonProperty("endorsementCount")
+    private Integer endorsementCount = 0;
 
+    @Field("created_at")
+    @JsonProperty("createdAt")
     private LocalDateTime createdAt;
+
+    public Skill(String skillId, String skillName, Integer proficiencyLevel) {
+        this.skillId = skillId;
+        this.skillName = skillName;
+        this.proficiencyLevel = proficiencyLevel;
+        this.endorsementCount = 0;
+        this.createdAt = LocalDateTime.now();
+    }
 }

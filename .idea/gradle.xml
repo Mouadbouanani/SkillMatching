@@ -12,16 +12,6 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$/skillmatch_flutter/android" />
         <option name="gradleJvm" value="#JAVA_HOME" />
       </GradleProjectSettings>
-      <GradleProjectSettings>
-        <option name="distributionType" value="LOCAL" />
-        <option name="externalProjectPath" value="$PROJECT_DIR$/skillmatching-frontend" />
-        <option name="gradleJvm" value="#JAVA_HOME" />
-        <option name="modules">
-          <set>
-            <option value="$PROJECT_DIR$/skillmatching-frontend" />
-          </set>
-        </option>
-      </GradleProjectSettings>
     </option>
   </component>
 </project>
