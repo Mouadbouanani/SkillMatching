@@ -24,7 +24,9 @@ public class WebSocketEventListener {
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectEvent event) {
-        log.info("Received a new web socket connection");
+        if (log.isInfoEnabled()) {
+            log.info("Received a new web socket connection");
+        }
     }
 
     @EventListener
@@ -32,7 +34,9 @@ public class WebSocketEventListener {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String username = (String) headerAccessor.getSessionAttributes().get("username");
         if (username != null) {
-            log.info("User connected: " + username);
+            if (log.isInfoEnabled()) {
+                log.info("User connected: " + username);
+            }
             // Could broadcast user presence here
         }
     }
@@ -42,7 +46,9 @@ public class WebSocketEventListener {
         StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
         String username = (String) headerAccessor.getSessionAttributes().get("username");
         if (username != null) {
-            log.info("User disconnected: " + username);
+            if (log.isInfoEnabled()) {
+                log.info("User disconnected: " + username);
+            }
 
             // Create and broadcast leave message
             Message leaveMessage = new Message();

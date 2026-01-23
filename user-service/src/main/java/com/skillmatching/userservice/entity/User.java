@@ -23,11 +23,6 @@ public class User {
     @Column(unique = true, nullable = false)
     private String firebaseUid;
 
-    @Column(nullable = false)
-    private String displayName;
-
-    private String phoneNumber;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
@@ -37,8 +32,6 @@ public class User {
 
     @Column(columnDefinition = "BOOLEAN DEFAULT true")
     private Boolean active;
-
-    private String profilePictureUrl;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

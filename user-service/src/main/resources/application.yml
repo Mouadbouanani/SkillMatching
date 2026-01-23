@@ -3,8 +3,8 @@ spring:
     name: user-service
   
   datasource:
-    url: jdbc:postgresql://postgres:5432/skill_match_users
-    username: postgres
+    url: jdbc:postgresql://ep-bold-base-a89vb20k-pooler.eastus2.azure.neon.tech:5432/user_service_db?sslmode=require
+    username: neondb_owner
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
   

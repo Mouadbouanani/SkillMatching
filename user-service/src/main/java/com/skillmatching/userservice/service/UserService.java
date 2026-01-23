@@ -26,16 +26,13 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-
-
-
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-   public void addUser(User user){
+    public void addUser(User user){
         userRepository.save(user);
-   }
+    }
 
     /**
      * @Admin Fonctionnalité
@@ -87,16 +84,15 @@ public class UserService {
 
         logger.info("User deleted: {}", firebaseUid);
     }
+
     private UserDTO convertToDTO(User user) {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
         dto.setFirebaseUid(user.getFirebaseUid());
-        dto.setDisplayName(user.getDisplayName());
-        dto.setPhoneNumber(user.getPhoneNumber());
         dto.setRole(user.getRole().toString());
         dto.setEmailVerified(user.getEmailVerified());
-        dto.setProfilePictureUrl(user.getProfilePictureUrl());
+        dto.setActive(user.getActive());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;

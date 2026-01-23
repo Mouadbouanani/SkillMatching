@@ -8,11 +8,9 @@ public class UserDTO {
     private String id;
     private String email;
     private String firebaseUid;
-    private String displayName;
-    private String phoneNumber;
     private String role;
     private Boolean emailVerified;
-    private String profilePictureUrl;
+    private Boolean active;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

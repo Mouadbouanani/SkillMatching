@@ -4,7 +4,6 @@ package com.skillmatching.userservice.controller;
 import com.skillmatching.userservice.dto.*;
 import com.skillmatching.userservice.service.AuthService;
 import com.google.firebase.auth.FirebaseAuthException;
-import com.skillmatching.userservice.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -43,19 +42,6 @@ public class AuthController {
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse(e.getMessage()));
-        }
-    }
-
-    @PutMapping("/update")
-    public ResponseEntity<?> updateUser(
-            @RequestHeader("Authorization") String firebaseUid,
-            @RequestBody User userUpdate) {
-        try {
-            UserDTO updated = authService.updateUser(firebaseUid, userUpdate);
-            return ResponseEntity.ok(updated);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(e.getMessage()));
         }
     }
