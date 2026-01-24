@@ -3,7 +3,6 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-profile-service/src/main/resources/firebase-credentials.json
 
 ### STS ###
 .apt_generated

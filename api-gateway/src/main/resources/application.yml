@@ -4,6 +4,11 @@ spring:
 
   cloud:
     gateway:
+      grpc:
+        enabled: false
+      filter:
+        json-to-grpc:
+          enabled: false
       globalcors:
         cors-configurations:
           '[/**]':
@@ -131,9 +136,6 @@ spring:
             - name: CircuitBreaker
               args:
                 name: messagingServiceCircuitBreaker
-
-      default-filters:
-        - name: GlobalLoggingFilter
 
 server:
   port: 8080
