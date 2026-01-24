@@ -1,6 +1,5 @@
 package com.skillmatching.apigeteway.filter;
 
-
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -37,9 +36,12 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 String uid = decodedToken.getUid();
 
                 // Add user info to header for downstream services
+                String role = (String) decodedToken.getClaims().get("role");
+
                 exchange.getRequest().mutate()
                         .header("X-User-Id", uid)
                         .header("X-User-Email", decodedToken.getEmail() != null ? decodedToken.getEmail() : "")
+                        .header("X-User-Role", role != null ? role : "user")
                         .build();
 
                 logger.info("Token verified for user: {}", uid);

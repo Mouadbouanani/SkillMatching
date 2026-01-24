@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 @Controller
 @RequestMapping
 @CrossOrigin(origins = "*")
-public class MessagingController {
+public class    MessagingController {
 
     @Autowired
     private MessagingService messagingService;

@@ -3,14 +3,14 @@ spring:
     name: job-service
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/skillmatch_jobs
-    username: skillmatch
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${JOB_DB_NAME:job_service_db}${DB_PARAMS:?sslmode=disable}
+    username: ${DB_USERNAME:neondb_owner}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
 
   kafka:
     bootstrap-servers: kafka:9092

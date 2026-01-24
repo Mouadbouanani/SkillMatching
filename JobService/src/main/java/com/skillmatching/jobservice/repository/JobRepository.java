@@ -6,5 +6,13 @@ import java.util.List;
 
 public interface JobRepository extends JpaRepository<Job, String> {
     List<Job> findByRequesterId(String requesterId);
+
     List<Job> findByStatus(Job.JobStatus status);
+
+    // Search by title or description
+    List<Job> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            String titleKeyword, String descriptionKeyword);
+
+    // Find by location
+    List<Job> findByLocationContainingIgnoreCase(String location);
 }

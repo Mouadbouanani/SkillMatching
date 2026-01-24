@@ -44,6 +44,10 @@ public class Job {
     @JoinColumn(name = "job_id") // FK in job_skills table
     private List<JobSkill> requiredSkills;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

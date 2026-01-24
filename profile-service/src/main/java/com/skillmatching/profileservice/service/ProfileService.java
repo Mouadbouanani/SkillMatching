@@ -56,6 +56,26 @@ public class ProfileService {
         return profileRepository.findAll();
     }
 
+    /**
+     * Search profiles by skill names.
+     * Used by matching-service for finding candidate providers.
+     *
+     * @param skillNames list of skill names to search for
+     * @return list of profiles that have matching skills
+     */
+    public List<Profile> searchBySkillNames(List<String> skillNames) {
+        if (skillNames == null || skillNames.isEmpty()) {
+            return profileRepository.findAll();
+        }
+
+        // Convert to lowercase for case-insensitive matching
+        List<String> normalizedSkills = skillNames.stream()
+                .map(String::toLowerCase)
+                .collect(java.util.stream.Collectors.toList());
+
+        return profileRepository.findBySkillNames(normalizedSkills);
+    }
+
     @CacheEvict(value = "profiles", key = "#profileId")
     public Profile updateProfile(String profileId, Profile profileUpdate) {
         Profile profile = profileRepository.findById(profileId)
@@ -127,6 +147,44 @@ public class ProfileService {
         } catch (Exception e) {
             // Redis not available, continue without cache
             System.out.println("Warning: Redis not available, skipping cache removal: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Submit a new rating for a user.
+     * Calculates the new average rating.
+     *
+     * @param userId    the user ID being rated
+     * @param newRating the rating value (1-5)
+     */
+    @CacheEvict(value = "profiles", key = "#userId")
+    public void submitRating(String userId, Double newRating) {
+        if (newRating < 1.0 || newRating > 5.0) {
+            throw new IllegalArgumentException("Rating must be between 1.0 and 5.0");
+        }
+
+        Profile profile = profileRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+
+        Double currentRating = profile.getRating() != null ? profile.getRating() : 0.0;
+        Integer currentCount = profile.getRatingCount() != null ? profile.getRatingCount() : 0;
+
+        // Calculate new average
+        Double totalScore = (currentRating * currentCount) + newRating;
+        Integer newCount = currentCount + 1;
+        Double newAverage = totalScore / newCount;
+
+        profile.setRating(newAverage);
+        profile.setRatingCount(newCount);
+        profile.preUpdate();
+
+        profileRepository.save(profile);
+
+        // Update cache
+        try {
+            redisTemplate.opsForValue().set("profile:" + profile.getId(), profile);
+        } catch (Exception e) {
+            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
         }
     }
 }

@@ -4,7 +4,7 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb+srv://tahamoum68_db_user:KtnhlWfwxWDWbR4g@cluster0.ncrj3pl.mongodb.net/skillmatch_profiles?retryWrites=true&w=majority
+      uri: ${MONGODB_URI:mongodb+srv://tahamoum68_db_user:KtnhlWfwxWDWbR4g@cluster0.ncrj3pl.mongodb.net/skillmatch_profiles?retryWrites=true&w=majority}
       database: skillmatch_profiles
       auto-index-creation: true
 

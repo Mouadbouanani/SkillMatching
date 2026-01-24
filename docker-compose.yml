@@ -1,7 +1,5 @@
-version: '3.9'
-
 services:
-  # Redis for caching
+  # Infrastructure (Local)
   redis:
     image: redis:7-alpine
     ports:
@@ -9,34 +7,6 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
-    networks:
-      - skillmatch-network
-
-  # PostgreSQL for user-service, job-service, and matching-service
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: skillmatch
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-skillmatch}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - skillmatch-network
-
-  # Kafka for event-driven services
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
     networks:
       - skillmatch-network
 
@@ -49,10 +19,152 @@ services:
     networks:
       - skillmatch-network
 
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    networks:
+      - skillmatch-network
+
+  # Microservices (Connecting to Cloud DBs & Local Infra)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase-credentials.json
+    volumes:
+      - ./api-gateway/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+    depends_on:
+      - user-service
+      - profile-service
+      - job-service
+    networks:
+      - skillmatch-network
+
+  user-service:
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PARAMS=${DB_PARAMS}
+      - USER_DB_NAME=${USER_DB_NAME}
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase-credentials.json
+    volumes:
+      - ./user-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+    networks:
+      - skillmatch-network
+
+  profile-service:
+    build:
+      context: .
+      dockerfile: profile-service/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - REDIS_HOST=redis
+    depends_on:
+      - redis
+    networks:
+      - skillmatch-network
+
+  job-service:
+    build:
+      context: .
+      dockerfile: JobService/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PARAMS=${DB_PARAMS}
+      - JOB_DB_NAME=${JOB_DB_NAME}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - skillmatch-network
+
+  matching-service:
+    build:
+      context: .
+      dockerfile: matching-service/Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PARAMS=${DB_PARAMS}
+      - MATCHING_DB_NAME=${MATCHING_DB_NAME}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - JOB_SERVICE_URL=http://job-service:8083
+      - PROFILE_SERVICE_URL=http://profile-service:8082
+    depends_on:
+      - kafka
+    networks:
+      - skillmatch-network
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PARAMS=${DB_PARAMS}
+      - NOTIFICATION_DB_NAME=${NOTIFICATION_DB_NAME}
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase-credentials.json
+    volumes:
+      - ./notification-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+    depends_on:
+      - kafka
+    networks:
+      - skillmatch-network
+
+  messaging-service:
+    build:
+      context: .
+      dockerfile: messaging-service/Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      - FIREBASE_CREDENTIALS_PATH=/app/config/firebase-credentials.json
+    volumes:
+      - ./messaging-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+    networks:
+      - skillmatch-network
+
 networks:
   skillmatch-network:
     driver: bridge
 
 volumes:
   redis_data:
-  postgres_data:

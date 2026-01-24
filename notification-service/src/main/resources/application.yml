@@ -3,9 +3,14 @@ spring:
     name: notification-service
 
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: notification-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
 server:
   port: 8085
@@ -14,3 +19,8 @@ server:
 
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-credentials.json}
+
+logging:
+  level:
+    root: INFO
+    com.skillmatching.notificationservice: DEBUG

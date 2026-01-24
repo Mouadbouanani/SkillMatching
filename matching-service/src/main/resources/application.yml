@@ -3,20 +3,66 @@ spring:
     name: matching-service
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/skillmatching_matches
-    username: skillmatching
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${MATCHING_DB_NAME:skillmatching_matches}${DB_PARAMS:?sslmode=disable}
+    username: ${DB_USERNAME:neondb_owner}
+    password: ${DB_PASSWORD:npg_OKUFJBD5qw4f}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
 
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: matching-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
 
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+
+# Server configuration
 server:
   port: 8084
   servlet:
     context-path: /api/matches
+
+# Service URLs for inter-service communication
+services:
+  job-service:
+    url: ${JOB_SERVICE_URL:http://localhost:8083}
+  profile-service:
+    url: ${PROFILE_SERVICE_URL:http://localhost:8082}
+  notification-service:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.skillmatching.matchingservice: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+
+# Matching Algorithm Configuration
+matching:
+  algorithm:
+    # Minimum score (0-100) required to create a match
+    threshold: 50.0
+    # Maximum matches to create per job
+    max-matches-per-job: 10
+    # Weights for scoring components (must sum to 1.0)
+    weights:
+      skill-match: 0.40
+      experience: 0.25
+      rating: 0.20
+      location: 0.15

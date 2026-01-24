@@ -43,19 +43,24 @@ public class AuthService {
             User user = new User();
             user.setEmail(request.getEmail());
             user.setFirebaseUid(firebaseUser.getUid());
-            user.setRole(User.UserRole.valueOf(request.getRole() != null ? request.getRole() : "CLIENT"));
+            String roleStr = request.getRole() != null ? request.getRole() : "CLIENT";
+            user.setRole(User.UserRole.valueOf(roleStr));
             user.setEmailVerified(false);
 
             user = userRepository.save(user);
 
-            logger.info("User registered: {}", user.getEmail());
+            // Set Custom Claims in Firebase (essential for security in other services)
+            java.util.Map<String, Object> claims = new java.util.HashMap<>();
+            claims.put("role", roleStr.toLowerCase());
+            firebaseService.setCustomClaims(user.getFirebaseUid(), claims);
+
+            logger.info("User registered and role set in Firebase: {}", user.getEmail());
 
             return new AuthResponse(
-                    firebaseUser.getCustomClaims() != null ? firebaseUser.getCustomClaims().toString() : "",
+                    "", // idToken usually comes from frontend client
                     "",
                     firebaseUser.getUid(),
-                    convertToDTO(user)
-            );
+                    convertToDTO(user));
         } catch (Exception e) {
             // Clean up Firebase user if database insertion fails
             if (firebaseUser != null) {
