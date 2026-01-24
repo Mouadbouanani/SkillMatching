@@ -9,16 +9,15 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-@Controller
+@RestController
 @RequestMapping
 @CrossOrigin(origins = "*")
-public class    MessagingController {
+public class MessagingController {
 
     @Autowired
     private MessagingService messagingService;
@@ -26,51 +25,59 @@ public class    MessagingController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    @MessageMapping("/chat/{conversationId}")
-    public void sendMessage(@DestinationVariable String conversationId, @Payload Message message) {
-        messagingService.sendMessage(message)
-            .thenAccept(documentRef -> {
-                try {
-                    // Send the message ID back to the conversation topic
+    // ==================== REST ENDPOINTS ====================
+
+    @PostMapping("/send")
+    public CompletableFuture<ResponseEntity<Message>> sendMessageRest(@RequestBody Message message) {
+        return messagingService.sendMessage(message)
+                .thenApply(documentRef -> {
                     message.setId(documentRef.getId());
-                    messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, message);
-                } catch (Exception e) {
-                    System.err.println("Error sending message via WebSocket: " + e.getMessage());
-                }
-            })
-            .exceptionally(throwable -> {
-                System.err.println("Error sending message: " + throwable.getMessage());
-                return null;
-            });
+                    // Broadcast to WebSocket subscribers as well
+                    try {
+                        messagingTemplate.convertAndSend("/topic/conversation/" + message.getConversationId(), message);
+                    } catch (Exception e) {
+                        System.err.println("WebSocket broadcast failed: " + e.getMessage());
+                    }
+                    return ResponseEntity.ok(message);
+                });
     }
 
     @GetMapping("/conversation/{conversationId}")
-    public void getConversation(@PathVariable String conversationId, @RequestParam(required = false) Integer limit) {
-        messagingService.getConversationMessages(conversationId)
-            .thenAccept(messages -> {
-                // Send messages back to the user's private queue
-                messagingTemplate.convertAndSendToUser(
-                    "currentUser",
-                    "/queue/conversation/" + conversationId,
-                    messages
-                );
-            })
-            .exceptionally(throwable -> {
-                System.err.println("Error retrieving messages: " + throwable.getMessage());
-                return null;
-            });
+    public CompletableFuture<ResponseEntity<List<Message>>> getConversationMessagesRest(
+            @PathVariable String conversationId) {
+        return messagingService.getConversationMessages(conversationId)
+                .thenApply(ResponseEntity::ok);
     }
 
     @PutMapping("/{messageId}/read")
-    public void markAsRead(@PathVariable String messageId) {
-        messagingService.markAsRead(messageId)
-            .thenAccept(updatedMessage -> {
-                // Optionally broadcast read receipt
-                messagingTemplate.convertAndSend("/topic/message/read", updatedMessage);
-            })
-            .exceptionally(throwable -> {
-                System.err.println("Error marking message as read: " + throwable.getMessage());
-                return null;
-            });
+    public CompletableFuture<ResponseEntity<Message>> markAsReadRest(@PathVariable String messageId) {
+        return messagingService.markAsRead(messageId)
+                .thenApply(updatedMessage -> {
+                    if (updatedMessage != null) {
+                        return ResponseEntity.ok(updatedMessage);
+                    } else {
+                        return ResponseEntity.notFound().build();
+                    }
+                });
+    }
+
+    @GetMapping("/actuator/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("Messaging Service is UP");
+    }
+
+    // ==================== WEBSOCKET ENDPOINTS ====================
+
+    @MessageMapping("/chat/{conversationId}")
+    public void sendMessageWebSocket(@DestinationVariable String conversationId, @Payload Message message) {
+        messagingService.sendMessage(message)
+                .thenAccept(documentRef -> {
+                    try {
+                        message.setId(documentRef.getId());
+                        messagingTemplate.convertAndSend("/topic/conversation/" + conversationId, message);
+                    } catch (Exception e) {
+                        System.err.println("Error sending message via WebSocket: " + e.getMessage());
+                    }
+                });
     }
 }

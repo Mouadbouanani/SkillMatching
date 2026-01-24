@@ -1,6 +1,5 @@
 package com.skillmatching.userservice.controller;
 
-
 import com.skillmatching.userservice.dto.*;
 import com.skillmatching.userservice.service.AuthService;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping
 @CrossOrigin(origins = "*")
 public class AuthController {
 
@@ -33,6 +32,16 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            AuthResponse response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse(e.getMessage()));
+        }
+    }
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
@@ -47,8 +56,12 @@ public class AuthController {
     }
 
     @GetMapping("/hello")
-    public String hello(){
+    public String hello() {
         return "hello world";
     }
-}
 
+    @GetMapping("/health")
+    public ResponseEntity<?> health() {
+        return ResponseEntity.ok("User Service is UP");
+    }
+}

@@ -16,4 +16,4 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /app/messaging-service/target/messaging-service-1.0.0.jar app.jar
 EXPOSE 8086
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "--add-opens=java.base/java.time=ALL-UNNAMED", "--add-opens=java.base/java.time.chrono=ALL-UNNAMED", "-jar", "app.jar"]

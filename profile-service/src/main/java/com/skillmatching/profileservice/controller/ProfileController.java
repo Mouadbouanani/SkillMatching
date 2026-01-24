@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -50,13 +51,13 @@ public class ProfileController {
             @PathVariable String userId,
             @RequestBody Profile profileUpdate,
             Authentication authentication) {
-        
+
         Profile existing = profileService.getProfileByUserId(userId);
         String currentUserId = authentication.getName();
-        
+
         if (!existing.getUserId().equals(currentUserId) &&
-            !authentication.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
+                !authentication.getAuthorities().stream()
+                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body("You can only update your own profile or you need admin privileges");
         }
@@ -70,14 +71,14 @@ public class ProfileController {
             @PathVariable String userId,
             @RequestBody Skill skill,
             Authentication authentication) {
-        
+
         try {
             Profile existing = profileService.getProfileByUserId(userId);
             String currentUserId = authentication.getName();
-            
+
             if (!existing.getUserId().equals(currentUserId) &&
-                !authentication.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
+                    !authentication.getAuthorities().stream()
+                            .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body("You can only add skills to your own profile");
             }
@@ -95,15 +96,29 @@ public class ProfileController {
 
             profileService.addSkill(existing.getId(), skill);
             return ResponseEntity.ok("Skill added successfully");
-            
+
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Error: " + e.getMessage());
         }
     }
 
+    @GetMapping("/skills")
+    public ResponseEntity<java.util.List<Profile>> getProfilesBySkills(@RequestParam List<String> skills) {
+        return ResponseEntity.ok(profileService.searchBySkills(skills));
+    }
+
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<?> getProfileByUserId(@PathVariable String userId) {
+        return ResponseEntity.ok(profileService.getProfileByUserId(userId));
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAll() {
+        return ResponseEntity.ok(profileService.getAllProfiles());
+    }
+
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAllProfiles() {
         return ResponseEntity.ok(profileService.getAllProfiles());
     }

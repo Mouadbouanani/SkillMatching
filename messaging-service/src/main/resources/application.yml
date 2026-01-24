@@ -16,3 +16,21 @@ server:
   port: 8086
   servlet:
     context-path: /api/messages
+
+eureka:
+  client:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    com.skillmatching.messagingservice: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+  endpoint:
+    health:
+      show-details: always

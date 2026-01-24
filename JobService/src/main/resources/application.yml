@@ -13,15 +13,22 @@ spring:
       ddl-auto: update
 
   kafka:
-    bootstrap-servers: kafka:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
-      bootstrap-servers: kafka:9092
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
       group-id: job-service-group
 
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-credentials.json}
+
+eureka:
+  client:
+    enabled: false
+
 server:
-  port: 8084
+  port: 8083
   servlet:
     context-path: /api/jobs

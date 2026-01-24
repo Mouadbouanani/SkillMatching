@@ -21,6 +21,12 @@ spring:
               - OPTIONS
             allowedHeaders: "*"
             maxAge: 3600
+      
+      default-filters:
+        - name: Retry
+          args:
+            retries: 3
+            methods: GET,POST
 
       routes:
         # Public Auth Routes (No AuthenticationFilter)
@@ -136,6 +142,24 @@ spring:
             - name: CircuitBreaker
               args:
                 name: messagingServiceCircuitBreaker
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000
+        registerHealthIndicator: true
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 10s
+
+eureka:
+  client:
+    enabled: false
 
 server:
   port: 8080

@@ -9,19 +9,56 @@ import com.skillmatching.userservice.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 @Service
 public class AuthService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
 
+    @Value("${firebase.api-key}")
+    private String firebaseApiKey;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @Autowired
     private FirebaseService firebaseService;
 
     @Autowired
     private UserRepository userRepository;
+
+    public AuthResponse login(LoginRequest request) {
+        String url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + firebaseApiKey;
+
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("email", request.getEmail());
+        body.put("password", request.getPassword());
+        body.put("returnSecureToken", true);
+
+        try {
+            org.springframework.http.ResponseEntity<java.util.Map> response = restTemplate.postForEntity(url, body,
+                    java.util.Map.class);
+            java.util.Map<String, Object> responseBody = response.getBody();
+
+            if (responseBody == null) {
+                throw new RuntimeException("Erreur de connexion a Firebase");
+            }
+
+            String idToken = (String) responseBody.get("idToken");
+            String refreshToken = (String) responseBody.get("refreshToken");
+            String uid = (String) responseBody.get("localId");
+
+            UserDTO userDto = getUserByFirebaseUid(uid);
+
+            return new AuthResponse(idToken, refreshToken, uid, userDto);
+        } catch (Exception e) {
+            logger.error("Login Error: {}", e.getMessage());
+            throw new RuntimeException("Echec de l'authentification : Email ou mot de passe incorrect");
+        }
+    }
 
     @Transactional
     public AuthResponse register(UserRegistrationDTO request) throws FirebaseAuthException {
@@ -43,6 +80,8 @@ public class AuthService {
             User user = new User();
             user.setEmail(request.getEmail());
             user.setFirebaseUid(firebaseUser.getUid());
+            user.setDisplayName(request.getDisplayName());
+            user.setPhoneNumber(request.getPhoneNumber());
             String roleStr = request.getRole() != null ? request.getRole() : "CLIENT";
             user.setRole(User.UserRole.valueOf(roleStr));
             user.setEmailVerified(false);

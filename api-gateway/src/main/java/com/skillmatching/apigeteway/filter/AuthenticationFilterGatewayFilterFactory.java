@@ -11,12 +11,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Component
-public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
+public class AuthenticationFilterGatewayFilterFactory
+        extends AbstractGatewayFilterFactory<AuthenticationFilterGatewayFilterFactory.Config> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AuthenticationFilter.class);
+    private static final Logger logger = LoggerFactory.getLogger(AuthenticationFilterGatewayFilterFactory.class);
+    private final com.google.firebase.FirebaseApp firebaseApp;
 
-    public AuthenticationFilter() {
+    public AuthenticationFilterGatewayFilterFactory(com.google.firebase.FirebaseApp firebaseApp) {
         super(Config.class);
+        this.firebaseApp = firebaseApp;
     }
 
     @Override
@@ -26,13 +29,13 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 String token = getTokenFromRequest(exchange.getRequest());
 
                 if (token == null || token.isEmpty()) {
-                    logger.warn("No token provided");
+                    logger.warn("No token provided for path: {}", exchange.getRequest().getPath());
                     exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
                     return exchange.getResponse().setComplete();
                 }
 
-                // Verify token with Firebase
-                var decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+                // Verify token with Firebase using the injected app
+                var decodedToken = FirebaseAuth.getInstance(firebaseApp).verifyIdToken(token);
                 String uid = decodedToken.getUid();
 
                 // Add user info to header for downstream services

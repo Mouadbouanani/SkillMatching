@@ -39,3 +39,6 @@ management:
     health:
       show-details: always
 
+eureka:
+  client:
+    enabled: false

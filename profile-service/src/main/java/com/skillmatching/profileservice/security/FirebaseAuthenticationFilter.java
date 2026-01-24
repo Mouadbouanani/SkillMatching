@@ -1,5 +1,6 @@
 package com.skillmatching.profileservice.security;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.FilterChain;
@@ -9,71 +10,68 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Component;
 
 @Component
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
+
+    private final FirebaseApp firebaseApp;
+
+    public FirebaseAuthenticationFilter(FirebaseApp firebaseApp) {
+        this.firebaseApp = firebaseApp;
+    }
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
 
-        if (header == null || !header.startsWith("Bearer ")) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Missing or invalid Authorization header. Expected: Bearer <token>\"}");
-            return;
-        }
+        if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
+            try {
+                FirebaseToken decodedToken = FirebaseAuth.getInstance(firebaseApp).verifyIdToken(token);
+                String uid = decodedToken.getUid();
 
-        String token = header.substring(7);
+                // Extract role from custom claims
+                Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                Map<String, Object> claims = decodedToken.getClaims();
+                Object roleClaim = claims.get("role");
 
-        try {
-            FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
-            String uid = decodedToken.getUid();
+                if (roleClaim != null) {
+                    String role = roleClaim.toString().toUpperCase();
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                    authorities.add(new SimpleGrantedAuthority(role));
+                } else {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+                }
 
-            // Extract role from custom claims
-            Collection<SimpleGrantedAuthority> authorities = new ArrayList<>();
-            Map<String, Object> claims = decodedToken.getClaims();
-            Object roleClaim = claims.get("role");
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(uid, null,
+                        authorities);
 
-            if (roleClaim != null) {
-                String role = roleClaim.toString().toUpperCase();
-                // Add ROLE_ prefix to match Spring Security convention
-                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                // Also add the raw role as an authority
-                authorities.add(new SimpleGrantedAuthority(role));
+            } catch (Exception e) {
+                logger.error("Firebase Auth Error: " + e.getMessage());
+                // For requests with invalid tokens, we return 401
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json");
+                response.getWriter().write(
+                        "{\"error\":\"Unauthorized\",\"message\":\"Invalid Firebase token: " + e.getMessage() + "\"}");
+                return;
             }
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            uid,
-                            null,
-                            authorities
-                    );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        } catch (Exception e) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"error\":\"Unauthorized\",\"message\":\"Invalid Firebase token: " + e.getMessage() + "\"}");
-            return;
         }
 
+        // If no token or invalid token but error handled above, continue filter chain
+        // This allows SecurityConfig's permitAll() to handle missing headers
         filterChain.doFilter(request, response);
     }
 }
-

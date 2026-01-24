@@ -14,24 +14,24 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity(prePostEnabled = true) // Enable method-level security
 public class SecurityConfig {
 
-    @Autowired
-    private FirebaseAuthenticationFilter firebaseAuthenticationFilter;
+        @Autowired
+        private FirebaseAuthenticationFilter firebaseAuthenticationFilter;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health").permitAll()  // Health check sans auth
-                        .requestMatchers("/test/**").permitAll()  // Endpoints de test sans auth (à désactiver en production)
-                        .anyRequest().authenticated()  // Toutes les autres requêtes nécessitent une authentification
-                )
-                .addFilterBefore(
-                        firebaseAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(org.springframework.http.HttpMethod.GET,
+                                                                "/api/profiles/**")
+                                                .permitAll()
+                                                .requestMatchers("/actuator/health").permitAll()
+                                                .requestMatchers("/test/**").permitAll()
+                                                .anyRequest().authenticated())
+                                .addFilterBefore(
+                                                firebaseAuthenticationFilter,
+                                                UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 }
-

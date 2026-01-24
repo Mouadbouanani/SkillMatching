@@ -21,6 +21,10 @@ spring:
     user:
       name: admin
       password: admin
+eureka:
+  client:
+    enabled: false
+
 server:
   port: 8081
   servlet:
@@ -33,3 +37,4 @@ logging:
 
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:file:config/firebase-credentials.json}
+  api-key: ${FIREBASE_API_KEY:}

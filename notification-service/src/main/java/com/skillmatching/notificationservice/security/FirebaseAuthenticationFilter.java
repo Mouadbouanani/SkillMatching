@@ -1,5 +1,6 @@
 package com.skillmatching.notificationservice.security;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.FilterChain;
@@ -9,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -18,7 +20,14 @@ import java.util.List;
 /**
  * Filter to validate Firebase ID tokens and set security context.
  */
+@Component
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
+
+    private final FirebaseApp firebaseApp;
+
+    public FirebaseAuthenticationFilter(FirebaseApp firebaseApp) {
+        this.firebaseApp = firebaseApp;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -29,7 +38,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             try {
-                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+                FirebaseToken decodedToken = FirebaseAuth.getInstance(firebaseApp).verifyIdToken(token);
                 String uid = decodedToken.getUid();
 
                 // Get role from custom claims

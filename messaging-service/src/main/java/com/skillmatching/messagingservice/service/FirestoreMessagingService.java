@@ -10,7 +10,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.time.LocalDateTime;
+import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -54,7 +54,7 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
 
         // Set timestamp if not already set
         if (message.getSentAt() == null) {
-            message.setSentAt(LocalDateTime.now());
+            message.setSentAt(new java.util.Date());
         }
         if (message.getIsRead() == null) {
             message.setIsRead(false);
@@ -90,7 +90,6 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
 
         ApiFuture<QuerySnapshot> apiFuture = messagesCollection
                 .whereEqualTo("conversationId", conversationId)
-                .orderBy("sentAt", Query.Direction.ASCENDING)
                 .get();
 
         CompletableFuture<List<Message>> completableFuture = new CompletableFuture<>();
@@ -98,6 +97,9 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
             try {
                 QuerySnapshot snapshot = apiFuture.get();
                 List<Message> messages = snapshot.toObjects(Message.class);
+                // Sort in memory to avoid Firestore composite index requirement
+                messages.sort(java.util.Comparator.comparing(Message::getSentAt,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
                 completableFuture.complete(messages);
             } catch (Exception e) {
                 completableFuture.completeExceptionally(e);
@@ -114,7 +116,7 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
             Message mockMessage = new Message();
             mockMessage.setId(messageId);
             mockMessage.setIsRead(true);
-            mockMessage.setReadAt(LocalDateTime.now());
+            mockMessage.setReadAt(new java.util.Date());
             future.complete(mockMessage);
             return future;
         }
@@ -123,9 +125,9 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
 
         Message updatedMessage = new Message();
         updatedMessage.setIsRead(true);
-        updatedMessage.setReadAt(LocalDateTime.now());
+        updatedMessage.setReadAt(new java.util.Date());
 
-        ApiFuture<WriteResult> apiFuture = messageRef.update("isRead", true, "readAt", LocalDateTime.now());
+        ApiFuture<WriteResult> apiFuture = messageRef.update("isRead", true, "readAt", new java.util.Date());
 
         CompletableFuture<Message> completableFuture = new CompletableFuture<>();
         apiFuture.addListener(() -> {
@@ -168,11 +170,14 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
                 });
     }
 
-    public CompletableFuture<DocumentReference> createConversation(com.skillmatching.messagingservice.entity.Conversation conversation) {
+    public CompletableFuture<DocumentReference> createConversation(
+            com.skillmatching.messagingservice.entity.Conversation conversation) {
         if (!isFirestoreAvailable) {
             CompletableFuture<DocumentReference> future = new CompletableFuture<>();
-            // Return a completed future with a mock ID (we'll just return a completed future)
-            // Since we can't create a real DocumentReference without the complex internal classes
+            // Return a completed future with a mock ID (we'll just return a completed
+            // future)
+            // Since we can't create a real DocumentReference without the complex internal
+            // classes
             future.completeExceptionally(new RuntimeException("Firestore not available"));
             return future;
         }
@@ -192,7 +197,8 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
         return completableFuture;
     }
 
-    public CompletableFuture<com.skillmatching.messagingservice.entity.Conversation> getConversation(String conversationId) {
+    public CompletableFuture<com.skillmatching.messagingservice.entity.Conversation> getConversation(
+            String conversationId) {
         if (!isFirestoreAvailable) {
             CompletableFuture<com.skillmatching.messagingservice.entity.Conversation> future = new CompletableFuture<>();
             future.complete(null);
@@ -208,8 +214,8 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
             try {
                 DocumentSnapshot snapshot = apiFuture.get();
                 if (snapshot.exists()) {
-                    com.skillmatching.messagingservice.entity.Conversation conv =
-                        snapshot.toObject(com.skillmatching.messagingservice.entity.Conversation.class);
+                    com.skillmatching.messagingservice.entity.Conversation conv = snapshot
+                            .toObject(com.skillmatching.messagingservice.entity.Conversation.class);
                     conv.setId(snapshot.getId());
                     completableFuture.complete(conv);
                 } else {

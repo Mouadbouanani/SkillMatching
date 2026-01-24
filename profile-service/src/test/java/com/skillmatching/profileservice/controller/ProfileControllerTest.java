@@ -24,7 +24,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
-@RequestMapping("/api/profiles")
 @AutoConfigureMockMvc
 @Testcontainers
 class ProfileControllerTest {
@@ -61,9 +60,9 @@ class ProfileControllerTest {
         profile.setLocation("Paris");
         profile.setSkills(new ArrayList<>());
 
-        mockMvc.perform(post("/create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(profile)))
+        mockMvc.perform(post("/api/profiles/create")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(profile)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.displayName").value("Test User"))
                 .andExpect(jsonPath("$.userId").value("test-user-123"));
@@ -79,7 +78,7 @@ class ProfileControllerTest {
         profile.setSkills(new ArrayList<>());
         profileRepository.save(profile);
 
-        mockMvc.perform(get("/test-user-456"))
+        mockMvc.perform(get("/api/profiles/test-user-456"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value("test-user-456"))
                 .andExpect(jsonPath("$.displayName").value("Test User"));
@@ -99,9 +98,9 @@ class ProfileControllerTest {
         update.setDisplayName("Updated Name");
         update.setBio("Updated bio");
 
-        mockMvc.perform(put("/" + saved.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(update)))
+        mockMvc.perform(put("/api/profiles/" + saved.getUserId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(update)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.displayName").value("Updated Name"))
                 .andExpect(jsonPath("$.bio").value("Updated bio"));
@@ -123,10 +122,9 @@ class ProfileControllerTest {
         skill.setProficiencyLevel(8);
         skill.setYearsExperience(5);
 
-        mockMvc.perform(post("/" + saved.getId() + "/skills")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(skill)))
+        mockMvc.perform(post("/api/profiles/" + saved.getUserId() + "/skills")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(skill)))
                 .andExpect(status().isOk());
     }
 }
-

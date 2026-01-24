@@ -3,17 +3,20 @@ package com.skillmatching.profileservice.service;
 import com.skillmatching.profileservice.entity.Profile;
 import com.skillmatching.profileservice.entity.Skill;
 import com.skillmatching.profileservice.repository.ProfileRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
-import java.util.UUID;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class ProfileService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProfileService.class);
 
     @Autowired
     private ProfileRepository profileRepository;
@@ -37,7 +40,7 @@ public class ProfileService {
             redisTemplate.opsForValue().set("profile:" + saved.getId(), saved);
         } catch (Exception e) {
             // Redis not available, continue without cache
-            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+            logger.warn("Redis not available, skipping cache: {}", e.getMessage());
         }
         return saved;
     }
@@ -55,6 +58,10 @@ public class ProfileService {
 
     public List<Profile> getAllProfiles() {
         return profileRepository.findAll();
+    }
+
+    public List<Profile> searchBySkills(List<String> skillNames) {
+        return profileRepository.findBySkillNames(skillNames);
     }
 
     @CacheEvict(value = "profiles", key = "#profileId")
@@ -85,7 +92,7 @@ public class ProfileService {
             redisTemplate.opsForValue().set("profile:" + updated.getId(), updated);
         } catch (Exception e) {
             // Redis not available, continue without cache
-            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+            logger.warn("Redis not available, skipping cache: {}", e.getMessage());
         }
         return updated;
     }
@@ -112,7 +119,7 @@ public class ProfileService {
             redisTemplate.opsForValue().set("profile:" + updated.getId(), updated);
         } catch (Exception e) {
             // Redis not available, continue without cache
-            System.out.println("Warning: Redis not available, skipping cache: " + e.getMessage());
+            logger.warn("Redis not available, skipping cache: {}", e.getMessage());
         }
     }
 
@@ -127,7 +134,7 @@ public class ProfileService {
             redisTemplate.delete("profile:" + profileId);
         } catch (Exception e) {
             // Redis not available, continue without cache
-            System.out.println("Warning: Redis not available, skipping cache removal: " + e.getMessage());
+            logger.warn("Redis not available, skipping cache removal: {}", e.getMessage());
         }
     }
 }
