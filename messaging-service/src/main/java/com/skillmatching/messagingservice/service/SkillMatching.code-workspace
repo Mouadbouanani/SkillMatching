@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"name": "SkillMatching",
+			"path": "../../../../../../../.."
+		},
+		{
+			"name": "eureka-server",
+			"path": "../../../../../../../../../../../Downloads/CollabSpace-mouad/CollabSpace-mouad/backend/eureka-server"
+		}
+	],
+	"settings": {
+		"java.compile.nullAnalysis.mode": "automatic",
+		"java.configuration.updateBuildConfiguration": "interactive"
+	}
+}

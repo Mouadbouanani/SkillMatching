@@ -1,116 +1,96 @@
-# 🚀 SkillMatch - Professional Skills Marketplace Platform
+# 🚀 SkillMatch - Plateforme de Marché de Compétences
 
-SkillMatch is an innovative AI-powered marketplace that intelligently connects professionals with complementary skills for micro-jobs and projects.
-
-## 🏗️ System Architecture
-
-SkillMatch is built on a high-performance **Microservices Architecture** designed for scalability and real-time interaction.
-
-### 🛰️ Core Services
-| Service | Technology | Port | Purpose | Database |
-| :--- | :--- | :--- | :--- | :--- |
-| **API Gateway** | Spring Cloud Gateway | `8080` | Entry point, Auth, Global CORS, Routing | - |
-| **User Service** | Spring Boot | `8081` | Auth Sync, Role Management (RBAC) | **PostgreSQL (Neon)** |
-| **Profile Service** | Spring Boot | `8082` | Skills, Portfolios, Average Ratings | **MongoDB Atlas + Redis** |
-| **Job Service** | Spring Boot | `8083` | Job Posting, Applications, Categories | **PostgreSQL (Neon)** |
-| **Matching Service**| Spring Boot | `8084` | AI Scoring Algorithm (Weights) | **PostgreSQL (Neon)** |
-| **Notification** | Spring Boot | `8085` | FCM Push Alerts, History | **Firestore** |
-| **Messaging** | Spring Boot | `8086` | Real-time Chat & WebSocket Relay | **Firestore** |
+SkillMatch est une plateforme innovante alimentée par l'IA qui connecte intelligemment les professionnels avec des compétences complémentaires pour des micro-jobs et des projets.
 
 ---
 
-## 🔐 Role-Based Access Control (RBAC)
+## 1. 🛠️ Installation, Configuration et Exécution
 
-The system enforces strict access control via Firebase Custom Claims.
+Suivez ces étapes pour installer et lancer le projet complet en local.
 
-| Role | Authorizations |
-| :--- | :--- |
-| **ROLE_CLIENT** | Post jobs, Review applications, Rate providers, Manage matches. |
-| **ROLE_PROVIDER** | Create professional profile, Apply for jobs, Receive AI matches. |
-| **ROLE_ADMIN** | Platform analytics, Content moderation, User management. |
+### Prérequis
+*   **Docker Desktop** (installé et lancé)
+*   **Git**
 
-*Note: Roles are injected by the API Gateway into the `X-User-Role` header for all downstream services.*
+### Étape 1 : Cloner le projet
+Récupérez le code source depuis le dépôt GitHub :
 
----
-
-## 🧠 AI Matching Algorithm (Weighted Scoring)
-
-The `matching-service` computes a compatibility score (0-100%) for every new job using the following weights:
-
-*   **Skill Match (40%)**: Overlap between job requirements and provider expertise.
-*   **Experience (25%)**: Professional proficiency levels and years in field.
-*   **Reputation (20%)**: Historical rating average from completed projects.
-*   **Proximity (15%)**: Geographic match based on user location.
-
----
-
-## 📡 Frontend Integration Guide
-
-### 1. Connection Headers
-Every request to the Gateway (`:8080`) must include:
-```http
-Authorization: Bearer <FIREBASE_ID_TOKEN>
-Content-Type: application/json
+```bash
+git clone https://github.com/Mouadbouanani/SkillMatching.git
+cd SkillMatching
 ```
 
-### 2. Real-time Communication Paths
-| Feature | Path / Collection | Mode |
+### Étape 2 : Configuration
+Le projet est pré-configuré pour fonctionner avec Docker. Un fichier de configuration standard est utilisé par `docker-compose.yml`.
+
+Assurez-vous que les ports suivants sont libres sur votre machine : `8080` (Gateway), `8081-8086` (Services), `5432` (Postgres local si instancié), `9092` (Kafka).
+
+*Note : Les connexions aux bases de données cloud (PostgreSQL Neon & MongoDB Atlas) sont déjà configurées dans les fichiers de propriétés des services.*
+
+### Étape 3 : Exécution
+Lancez l'ensemble de l'architecture (bases de données, broker de messages, et microservices) avec une seule commande :
+
+```bash
+docker-compose up --build -d
+```
+
+Cette commande va :
+1.  Construire les images Docker pour chaque microservice (Maven build inclus).
+2.  Démarrer les conteneurs d'infrastructure (Zookeeper, Kafka, Redis).
+3.  Démarrer tous les microservices Spring Boot.
+
+### Étape 4 : Vérification
+Vérifiez que tous les services sont opérationnels :
+```bash
+docker-compose ps
+```
+Tout doit être en état `Up` ou `Running`.
+
+---
+
+## 2. 🏗️ Architecture et Choix Techniques
+
+Le projet repose sur une **Architecture Microservices** moderne, conçue pour la scalabilité, la résilience et la maintenance.
+
+### Schéma Global
+Le système est composé de services autonomes qui communiquent via **REST** (synchrone via Feign Client) et **Kafka** (asynchrone pour les événements).
+
+### Stack Technologique
+| Composant | Technologie | Justification |
 | :--- | :--- | :--- |
-| **Chat Messages** | `/messages/{messageId}` | Firestore (Listen) |
-| **Chat Relay** | `ws://localhost:8086/ws-chat` | WebSocket (Send/Receive) |
-| **Notifications** | `/notifications` | Firestore (Listen) |
-| **Matching History**| `GET /api/matches/suggestions/{jobId}` | REST API |
+| **Backend Core** | **Java 17 + Spring Boot 3** | Robustesse, écosystème riche et performance. |
+| **Gateway** | **Spring Cloud Gateway** | Point d'entrée unique, routage dynamique, sécurité centralisée (CORS). |
+| **Communication** | **Apache Kafka** | Gestion asynchrone des événements (ex: `JobCreated` déclenche le `MatchingService`) pour découpler les services. |
+| **Bases de Données** | **PostgreSQL (Neon)** | Données relationnelles structurées (Utilisateurs, Jobs). |
+| **NoSQL** | **MongoDB Atlas** | Données flexibles et volumineuses (Profils utilisateurs, Skills). |
+| **Cache** | **Redis** | Mise en cache rapide pour réduire la latence (Sessions, Données fréquentes). |
+| **Sécurité** | **Firebase Admin SDK** | Gestion des identités (Auth) et Notifications Push (FCM). |
+| **Temps Réel** | **WebSocket (STOMP)** | Chat en direct entre utilisateurs. |
+
+### Flux Principal (Exemple)
+1.  Un client poste un job via le **Job Service**.
+2.  Le Job Service publie un événement `job.created` dans **Kafka**.
+3.  Le **Matching Service** consomme cet événement, exécute son algorithme de pondération (Skills 40%, Expérience 25%, etc.), et trouve les meilleurs candidats.
+4.  Une notification est envoyée aux candidats via le **Notification Service** (Firebase).
 
 ---
 
-## 🛠️ API Reference (Key Endpoints)
+## 3. 📖 Documentation API (Swagger UI)
 
-### 💼 Job Lifecycle
-*   `POST /api/jobs/create`: Create job. **(Client only)**
-*   `POST /api/jobs/apply`: Apply for job. **(Provider only)**
-*   `PUT /api/jobs/{jobId}/status`: Update job status (OPEN, IN_PROGRESS, COMPLETED).
+Chaque microservice expose sa propre documentation interactive via **OpenAPI/Swagger**. Une fois le projet lancé (`http://localhost:8080` est la Gateway), vous pouvez accéder aux docs individuelles :
 
-### 🏆 Reputation & Discovery
-*   `POST /api/profiles/rate/{userId}?rating=5.0`: Submit rating.
-*   `GET /api/profiles/skills?skills=java,flutter`: Find providers by skills.
+| Service | Swagger URL (Documentation) |
+| :--- | :--- |
+| **API Gateway** | [http://localhost:8080/webjars/swagger-ui/index.html](http://localhost:8080/webjars/swagger-ui/index.html) |
+| **User Service** | [http://localhost:8081/api/users/swagger-ui/index.html](http://localhost:8081/api/users/swagger-ui/index.html) |
+| **Profile Service** | [http://localhost:8082/swagger-ui/index.html](http://localhost:8082/swagger-ui/index.html) |
+| **Job Service** | [http://localhost:8083/swagger-ui/index.html](http://localhost:8083/swagger-ui/index.html) |
+| **Matching Service** | [http://localhost:8084/api/matches/swagger-ui/index.html](http://localhost:8084/api/matches/swagger-ui/index.html) |
+| **Notification Service** | [http://localhost:8085/api/notifications/swagger-ui/index.html](http://localhost:8085/api/notifications/swagger-ui/index.html) |
+| **Messaging Service** | [http://localhost:8086/api/messages/swagger-ui/index.html](http://localhost:8086/api/messages/swagger-ui/index.html) |
 
-### 🧠 Match Resolution
-*   `GET /api/matches/suggestions/{jobId}`: Get top 10 AI matches.
-*   `POST /api/matches/{matchId}/accept`: Formally accept a match.
-
----
-
-## ⚙️ Deployment & Infrastructure
-
-### 🌑 Cloud Persistence (Production-Ready)
-*   **PostgreSQL**: Hosted on **Neon.tech** (Serverless).
-*   **NoSQL**: Hosted on **MongoDB Atlas** (Profiles).
-*   **Real-time**: Hosted on **Firebase Firestore**.
-
-### 🐳 Docker Setup
-1.  **Configure `.env`**:
-    ```properties
-    MONGODB_URI=...
-    DB_HOST=ep-bold-base...neon.tech
-    DB_PASSWORD=...
-    KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    FIREBASE_PROJECT_ID=...
-    ```
-2.  **Start Stack**:
-    ```bash
-    docker-compose up --build -d
-    ```
-
-### 🔄 Event Flow (Kafka)
-| Topic | Producer | Consumer | Action |
-| :--- | :--- | :--- | :--- |
-| `job.created` | Job Service | Matching Service | Triggers AI scoring engine. |
-| `match.created` | Matching Service| Notification Service| Sends FCM & Firestore alert. |
-| `message.sent` | Messaging Service| Notification Service| Sends "New Message" push alert. |
-
----
-
-## 🧪 Troubleshooting
-*   **401 Unauthorized**: Ensure the Firebase ID Token hasn't expired (tokens last 1 hour).
-*   **503 Service Unavailable**: Check Kafka status via `docker-compose ps`. Matching relies on Kafka being up.
-*   **CORS Issues**: The Gateway is configured for `*`. Ensure your frontend is sending the `Authorization` header in the `Access-Control-Allow-Headers`.
+### Endpoints Clés (Accessibles via Gateway)
+*   **Auth**: `POST /api/users/register`, `POST /api/users/login`
+*   **Jobs**: `POST /api/jobs/create`, `GET /api/jobs/open`
+*   **Profils**: `GET /api/profiles/{userId}`
+*   **Matchs**: `GET /api/matches/suggestions/{jobId}`

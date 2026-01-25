@@ -41,13 +41,17 @@ public class AuthenticationFilterGatewayFilterFactory
                 // Add user info to header for downstream services
                 String role = (String) decodedToken.getClaims().get("role");
 
-                exchange.getRequest().mutate()
+                logger.info("Token verified for user: {}", uid);
+
+                // IMPORTANT: Continue with the mutated exchange!
+                org.springframework.http.server.reactive.ServerHttpRequest mutatedRequest = exchange.getRequest()
+                        .mutate()
                         .header("X-User-Id", uid)
                         .header("X-User-Email", decodedToken.getEmail() != null ? decodedToken.getEmail() : "")
                         .header("X-User-Role", role != null ? role : "user")
                         .build();
 
-                logger.info("Token verified for user: {}", uid);
+                return chain.filter(exchange.mutate().request(mutatedRequest).build());
 
             } catch (FirebaseAuthException e) {
                 logger.error("Token verification failed: {}", e.getMessage());
@@ -58,8 +62,6 @@ public class AuthenticationFilterGatewayFilterFactory
                 exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
                 return exchange.getResponse().setComplete();
             }
-
-            return chain.filter(exchange);
         };
     }
 

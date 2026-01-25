@@ -96,6 +96,10 @@ public class JobService {
     public Job updateJob(String jobId, Job jobUpdate) {
         Job job = getJobById(jobId);
 
+        if (job.getStatus() != Job.JobStatus.OPEN) {
+            throw new RuntimeException("Cannot update a job that is already assigned or closed.");
+        }
+
         if (jobUpdate.getTitle() != null) {
             job.setTitle(jobUpdate.getTitle());
         }
@@ -115,7 +119,8 @@ public class JobService {
             job.setDeadline(jobUpdate.getDeadline());
         }
         if (jobUpdate.getRequiredSkills() != null) {
-            job.setRequiredSkills(jobUpdate.getRequiredSkills());
+            job.getRequiredSkills().clear();
+            job.getRequiredSkills().addAll(jobUpdate.getRequiredSkills());
         }
 
         return jobRepository.save(job);
@@ -127,6 +132,18 @@ public class JobService {
     @Transactional
     public void deleteJob(String jobId) {
         Job job = getJobById(jobId);
+
+        long acceptedCount = applicationRepository.countByJobIdAndStatus(jobId,
+                JobApplication.ApplicationStatus.ACCEPTED);
+
+        if (acceptedCount > 0) {
+            throw new RuntimeException("Cannot delete a job that has an accepted application.");
+        }
+
+        // Also delete associated applications
+        List<JobApplication> applications = applicationRepository.findByJobId(jobId);
+        applicationRepository.deleteAll(applications);
+
         jobRepository.delete(job);
     }
 
@@ -151,8 +168,12 @@ public class JobService {
 
     @Transactional
     public JobApplication applyForJob(JobApplication application) {
-        // Check if job exists
-        getJobById(application.getJobId());
+        // Check if job exists and is OPEN
+        Job job = getJobById(application.getJobId());
+
+        if (job.getStatus() != Job.JobStatus.OPEN) {
+            throw new RuntimeException("This job is no longer accepting applications.");
+        }
 
         // Check if already applied
         applicationRepository.findByJobIdAndProviderId(application.getJobId(), application.getProviderId())
@@ -175,6 +196,17 @@ public class JobService {
     public JobApplication updateApplicationStatus(String applicationId, JobApplication.ApplicationStatus status) {
         JobApplication application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new RuntimeException("Application not found"));
+
+        if (status == JobApplication.ApplicationStatus.ACCEPTED) {
+            Job job = getJobById(application.getJobId());
+            if (job.getStatus() != Job.JobStatus.OPEN) {
+                throw new RuntimeException("This job is already assigned to another provider or is closed.");
+            }
+            // Update job status to IN_PROGRESS
+            job.setStatus(Job.JobStatus.IN_PROGRESS);
+            jobRepository.save(job);
+        }
+
         application.setStatus(status);
         return applicationRepository.save(application);
     }

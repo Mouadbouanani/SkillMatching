@@ -36,34 +36,42 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        String xUserId = request.getHeader("X-User-Id");
+        String xUserRole = request.getHeader("X-User-Role");
         String header = request.getHeader("Authorization");
 
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+        // Prioritize Gateway trusted headers if present
+        if (xUserId != null) {
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+            if (xUserRole != null) {
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + xUserRole.toUpperCase()));
+            } else {
+                authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+            }
 
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    xUserId, null, authorities);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            logger.debug("Authenticated via Gateway headers: UID={}", xUserId);
+
+        } else if (header != null && header.startsWith("Bearer ")) {
+            String token = header.substring(7);
             try {
                 FirebaseToken decodedToken = FirebaseAuth.getInstance(firebaseApp).verifyIdToken(token);
                 String uid = decodedToken.getUid();
 
-                // Extract role from custom claims
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                 Object roleClaim = decodedToken.getClaims().get("role");
 
                 if (roleClaim != null) {
-                    String role = roleClaim.toString().toUpperCase();
-                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + roleClaim.toString().toUpperCase()));
                 } else {
                     authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
                 }
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        uid,
-                        null,
-                        authorities);
-
+                        uid, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                logger.debug("Authenticated user: {} with roles: {}", uid, authorities);
-
             } catch (Exception e) {
                 logger.error("Firebase Auth Error: {}", e.getMessage());
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

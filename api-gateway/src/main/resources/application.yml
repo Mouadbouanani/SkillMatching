@@ -2,6 +2,11 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+
   cloud:
     gateway:
       grpc:
@@ -12,14 +17,21 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:5500"
+              - "http://127.0.0.1:5500"
+              - "http://localhost:8000"
+              - "http://127.0.0.1:8000"
             allowedMethods:
               - GET
               - POST
               - PUT
               - DELETE
               - OPTIONS
+              - PATCH
             allowedHeaders: "*"
+            allowCredentials: true
             maxAge: 3600
       
       default-filters:
@@ -29,7 +41,6 @@ spring:
             methods: GET,POST
 
       routes:
-        # Public Auth Routes (No AuthenticationFilter)
         - id: public-auth
           uri: http://user-service:8081
           predicates:
@@ -39,7 +50,6 @@ spring:
               args:
                 name: authServiceCircuitBreaker
 
-        # Protected User Service Routes
         - id: user-service
           uri: http://user-service:8081
           predicates:
@@ -50,7 +60,6 @@ spring:
               args:
                 name: authServiceCircuitBreaker
 
-        # Public Profile Routes
         - id: public-profiles
           uri: http://profile-service:8082
           predicates:
@@ -60,68 +69,47 @@ spring:
               args:
                 name: profileServiceCircuitBreaker
 
-        # Protected Profile Service Routes
         - id: profile-service
           uri: http://profile-service:8082
           predicates:
             - Path=/api/profiles/**
           filters:
             - name: AuthenticationFilter
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter:
-                  replenishRate: 100
-                  burstCapacity: 200
-                key-resolver: "#{@userKeyResolver}"
             - name: CircuitBreaker
               args:
                 name: profileServiceCircuitBreaker
 
-        # Public Job Routes
         - id: public-jobs
           uri: http://job-service:8083
           predicates:
             - Path=/api/jobs/public/**, /api/jobs/all, /api/jobs/health, /api/info/categories
           filters:
+            - StripPrefix=2
             - name: CircuitBreaker
               args:
                 name: jobServiceCircuitBreaker
 
-        # Protected Job Service Routes
         - id: job-service
           uri: http://job-service:8083
           predicates:
             - Path=/api/jobs/**
           filters:
+            - StripPrefix=2
             - name: AuthenticationFilter
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
-                key-resolver: "#{@userKeyResolver}"
             - name: CircuitBreaker
               args:
                 name: jobServiceCircuitBreaker
 
-        # Protected Matching Service Routes
         - id: matching-service
           uri: http://matching-service:8084
           predicates:
             - Path=/api/matches/**
           filters:
             - name: AuthenticationFilter
-            - name: RequestRateLimiter
-              args:
-                redis-rate-limiter:
-                  replenishRate: 50
-                  burstCapacity: 100
-                key-resolver: "#{@userKeyResolver}"
             - name: CircuitBreaker
               args:
                 name: matchingServiceCircuitBreaker
 
-        # Protected Notification Service Routes
         - id: notification-service
           uri: http://notification-service:8085
           predicates:
@@ -132,7 +120,6 @@ spring:
               args:
                 name: notificationServiceCircuitBreaker
 
-        # Protected Messaging Service Routes
         - id: messaging-service
           uri: http://messaging-service:8086
           predicates:

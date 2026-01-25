@@ -3,14 +3,13 @@ package com.skillmatching.messagingservice.service;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
 import com.skillmatching.messagingservice.entity.Message;
-import com.skillmatching.messagingservice.entity.TypeMessage;
+import com.skillmatching.messagingservice.entity.Conversation;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -18,41 +17,43 @@ import java.util.function.Consumer;
 @Service
 public class FirestoreMessagingService implements MessagingServiceInterface {
 
-    @Autowired
-    @Lazy
-    private Firestore firestore;
-
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final Firestore firestore;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private CollectionReference messagesCollection;
     private CollectionReference conversationsCollection;
-    private boolean isFirestoreAvailable = true;
+    private boolean isFirestoreAvailable = false;
+
+    @Autowired
+    public FirestoreMessagingService(Firestore firestore, SimpMessagingTemplate messagingTemplate) {
+        this.firestore = firestore;
+        this.messagingTemplate = messagingTemplate;
+    }
 
     @PostConstruct
     public void init() {
         try {
-            // Try to initialize Firestore collections
             if (firestore != null) {
-                messagesCollection = firestore.collection("messages");
-                conversationsCollection = firestore.collection("conversations");
+                this.messagesCollection = firestore.collection("messages");
+                this.conversationsCollection = firestore.collection("conversations");
+                this.isFirestoreAvailable = true;
+                System.out.println("✅ Firestore initialized successfully in MessagingService");
             } else {
-                System.out.println("Firestore is not available. Running in limited mode.");
-                isFirestoreAvailable = false;
+                System.err.println("❌ Firestore instance is NULL. Check FirebaseConfig.");
             }
         } catch (Exception e) {
-            System.out.println("Error initializing Firestore: " + e.getMessage());
-            isFirestoreAvailable = false;
+            System.err.println("❌ Error initializing Firestore collections: " + e.getMessage());
         }
     }
 
     @Override
     public CompletableFuture<DocumentReference> sendMessage(Message message) {
+        CompletableFuture<DocumentReference> future = new CompletableFuture<>();
         if (!isFirestoreAvailable) {
-            return handleWithoutFirestore(message);
+            future.completeExceptionally(new RuntimeException("Firestore not available"));
+            return future;
         }
 
-        // Set timestamp if not already set
         if (message.getSentAt() == null) {
             message.setSentAt(new java.util.Date());
         }
@@ -60,185 +61,177 @@ public class FirestoreMessagingService implements MessagingServiceInterface {
             message.setIsRead(false);
         }
 
-        // Convert ApiFuture to CompletableFuture
         ApiFuture<DocumentReference> apiFuture = messagesCollection.add(message);
-
-        CompletableFuture<DocumentReference> completableFuture = new CompletableFuture<>();
         apiFuture.addListener(() -> {
             try {
-                DocumentReference result = apiFuture.get();
-                completableFuture.complete(result);
-
-                // Broadcast to conversation participants via WebSocket
-                messagingTemplate.convertAndSend(
-                        "/topic/conversation/" + message.getConversationId(), message);
+                DocumentReference ref = apiFuture.get();
+                updateConversationLastMessage(message.getConversationId(), message.getText());
+                future.complete(ref);
             } catch (Exception e) {
-                completableFuture.completeExceptionally(e);
+                System.err.println("❌ Error sending message: " + e.getMessage());
+                future.completeExceptionally(e);
             }
         }, Runnable::run);
 
-        return completableFuture;
+        return future;
+    }
+
+    private void updateConversationLastMessage(String conversationId, String content) {
+        if (conversationId == null)
+            return;
+        try {
+            conversationsCollection.document(conversationId).update(
+                    "lastMessageContent", content,
+                    "lastMessageAt", FieldValue.serverTimestamp());
+        } catch (Exception e) {
+            System.err.println("⚠️ Could not update conversation last message: " + e.getMessage());
+        }
     }
 
     @Override
     public CompletableFuture<List<Message>> getConversationMessages(String conversationId) {
+        CompletableFuture<List<Message>> future = new CompletableFuture<>();
         if (!isFirestoreAvailable) {
-            CompletableFuture<List<Message>> future = new CompletableFuture<>();
-            future.complete(List.of()); // Return empty list
+            future.complete(new ArrayList<>());
             return future;
         }
 
+        System.out.println("🔍 Fetching messages for conversation: " + conversationId);
+
+        // TEMPORARILY disable orderBy to rule out missing index issues
         ApiFuture<QuerySnapshot> apiFuture = messagesCollection
                 .whereEqualTo("conversationId", conversationId)
+                // .orderBy("sentAt", Query.Direction.ASCENDING)
                 .get();
 
-        CompletableFuture<List<Message>> completableFuture = new CompletableFuture<>();
         apiFuture.addListener(() -> {
             try {
-                QuerySnapshot snapshot = apiFuture.get();
-                List<Message> messages = snapshot.toObjects(Message.class);
-                // Sort in memory to avoid Firestore composite index requirement
-                messages.sort(java.util.Comparator.comparing(Message::getSentAt,
-                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())));
-                completableFuture.complete(messages);
+                QuerySnapshot querySnapshot = apiFuture.get();
+                List<Message> messages = querySnapshot.toObjects(Message.class);
+                // Sort manually in memory for now if needed, or just return as is
+                messages.sort((m1, m2) -> {
+                    if (m1.getSentAt() == null)
+                        return -1;
+                    if (m2.getSentAt() == null)
+                        return 1;
+                    return m1.getSentAt().compareTo(m2.getSentAt());
+                });
+                future.complete(messages);
+                System.out.println("✅ Found " + messages.size() + " messages");
             } catch (Exception e) {
-                completableFuture.completeExceptionally(e);
+                System.err.println("❌ Error getting messages: " + e.getMessage());
+                e.printStackTrace();
+                future.completeExceptionally(e);
             }
         }, Runnable::run);
 
-        return completableFuture;
+        return future;
     }
 
     @Override
     public CompletableFuture<Message> markAsRead(String messageId) {
+        CompletableFuture<Message> future = new CompletableFuture<>();
+        DocumentReference docRef = messagesCollection.document(messageId);
+
+        docRef.update("isRead", true, "readAt", FieldValue.serverTimestamp())
+                .addListener(() -> {
+                    try {
+                        DocumentSnapshot snap = docRef.get().get();
+                        future.complete(snap.toObject(Message.class));
+                    } catch (Exception e) {
+                        future.completeExceptionally(e);
+                    }
+                }, Runnable::run);
+
+        return future;
+    }
+
+    @Override
+    public CompletableFuture<List<Conversation>> getUserConversations(String userId) {
+        CompletableFuture<List<Conversation>> future = new CompletableFuture<>();
         if (!isFirestoreAvailable) {
-            CompletableFuture<Message> future = new CompletableFuture<>();
-            Message mockMessage = new Message();
-            mockMessage.setId(messageId);
-            mockMessage.setIsRead(true);
-            mockMessage.setReadAt(new java.util.Date());
-            future.complete(mockMessage);
+            future.complete(new ArrayList<>());
             return future;
         }
 
-        DocumentReference messageRef = messagesCollection.document(messageId);
+        System.out.println("🔍 Fetching conversations for user: " + userId);
 
-        Message updatedMessage = new Message();
-        updatedMessage.setIsRead(true);
-        updatedMessage.setReadAt(new java.util.Date());
+        ApiFuture<QuerySnapshot> q1Future = conversationsCollection.whereEqualTo("participant1Id", userId).get();
+        ApiFuture<QuerySnapshot> q2Future = conversationsCollection.whereEqualTo("participant2Id", userId).get();
 
-        ApiFuture<WriteResult> apiFuture = messageRef.update("isRead", true, "readAt", new java.util.Date());
-
-        CompletableFuture<Message> completableFuture = new CompletableFuture<>();
-        apiFuture.addListener(() -> {
+        CompletableFuture.runAsync(() -> {
             try {
-                apiFuture.get(); // Wait for the update to complete
-                // Return the updated message
-                updatedMessage.setId(messageId);
-                completableFuture.complete(updatedMessage);
+                QuerySnapshot snap1 = q1Future.get();
+                QuerySnapshot snap2 = q2Future.get();
+
+                List<Conversation> list = new ArrayList<>();
+                list.addAll(snap1.toObjects(Conversation.class));
+                list.addAll(snap2.toObjects(Conversation.class));
+
+                future.complete(deduplicate(list));
+                System.out.println("✅ Found " + list.size() + " conversations (before deduplication)");
             } catch (Exception e) {
-                completableFuture.completeExceptionally(e);
+                System.err.println("❌ Error getting conversations: " + e.getMessage());
+                future.completeExceptionally(e);
             }
-        }, Runnable::run);
+        });
 
-        return completableFuture;
+        return future;
     }
 
-    public void listenForNewMessages(String conversationId, Consumer<Message> callback) {
-        if (!isFirestoreAvailable) {
-            System.out.println("Firestore not available, cannot listen for new messages");
-            return;
+    private List<Conversation> deduplicate(List<Conversation> list) {
+        java.util.Map<String, Conversation> map = new java.util.HashMap<>();
+        for (Conversation c : list) {
+            String id = c.getId() != null ? c.getId() : c.getMatchId();
+            if (id != null)
+                map.put(id, c);
         }
-
-        messagesCollection
-                .whereEqualTo("conversationId", conversationId)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null) {
-                        System.err.println("Listen failed: " + error);
-                        return;
-                    }
-
-                    if (value != null) {
-                        for (DocumentChange dc : value.getDocumentChanges()) {
-                            if (dc.getType() == DocumentChange.Type.ADDED) {
-                                Message message = dc.getDocument().toObject(Message.class);
-                                message.setId(dc.getDocument().getId());
-                                callback.accept(message);
-                            }
-                        }
-                    }
-                });
+        return new ArrayList<>(map.values());
     }
 
-    public CompletableFuture<DocumentReference> createConversation(
-            com.skillmatching.messagingservice.entity.Conversation conversation) {
+    @Override
+    public CompletableFuture<DocumentReference> createConversation(Conversation conversation) {
+        CompletableFuture<DocumentReference> future = new CompletableFuture<>();
         if (!isFirestoreAvailable) {
-            CompletableFuture<DocumentReference> future = new CompletableFuture<>();
-            // Return a completed future with a mock ID (we'll just return a completed
-            // future)
-            // Since we can't create a real DocumentReference without the complex internal
-            // classes
             future.completeExceptionally(new RuntimeException("Firestore not available"));
             return future;
         }
 
-        ApiFuture<DocumentReference> apiFuture = conversationsCollection.add(conversation);
+        ApiFuture<QuerySnapshot> checkFuture = conversationsCollection
+                .whereEqualTo("matchId", conversation.getMatchId()).get();
 
-        CompletableFuture<DocumentReference> completableFuture = new CompletableFuture<>();
-        apiFuture.addListener(() -> {
+        checkFuture.addListener(() -> {
             try {
-                DocumentReference result = apiFuture.get();
-                completableFuture.complete(result);
-            } catch (Exception e) {
-                completableFuture.completeExceptionally(e);
-            }
-        }, Runnable::run);
-
-        return completableFuture;
-    }
-
-    public CompletableFuture<com.skillmatching.messagingservice.entity.Conversation> getConversation(
-            String conversationId) {
-        if (!isFirestoreAvailable) {
-            CompletableFuture<com.skillmatching.messagingservice.entity.Conversation> future = new CompletableFuture<>();
-            future.complete(null);
-            return future;
-        }
-
-        ApiFuture<DocumentSnapshot> apiFuture = firestore.collection("conversations")
-                .document(conversationId)
-                .get();
-
-        CompletableFuture<com.skillmatching.messagingservice.entity.Conversation> completableFuture = new CompletableFuture<>();
-        apiFuture.addListener(() -> {
-            try {
-                DocumentSnapshot snapshot = apiFuture.get();
-                if (snapshot.exists()) {
-                    com.skillmatching.messagingservice.entity.Conversation conv = snapshot
-                            .toObject(com.skillmatching.messagingservice.entity.Conversation.class);
-                    conv.setId(snapshot.getId());
-                    completableFuture.complete(conv);
+                QuerySnapshot snap = checkFuture.get();
+                if (!snap.isEmpty()) {
+                    future.complete(snap.getDocuments().get(0).getReference());
                 } else {
-                    completableFuture.complete(null);
+                    ApiFuture<DocumentReference> addFuture = conversationsCollection.add(conversation);
+                    future.complete(addFuture.get());
                 }
             } catch (Exception e) {
-                completableFuture.completeExceptionally(e);
+                future.completeExceptionally(e);
             }
         }, Runnable::run);
 
-        return completableFuture;
+        return future;
     }
 
-    // Helper method to handle operations when Firestore is not available
-    private CompletableFuture<DocumentReference> handleWithoutFirestore(Message message) {
-        CompletableFuture<DocumentReference> future = new CompletableFuture<>();
-        // Return a completed future with a mock ID
-        future.completeExceptionally(new RuntimeException("Firestore not available"));
+    public void listenForNewMessages(String conversationId, Consumer<Message> onMessage) {
+        if (!isFirestoreAvailable)
+            return;
 
-        // Still broadcast to WebSocket for real-time functionality
-        messagingTemplate.convertAndSend(
-                "/topic/conversation/" + message.getConversationId(), message);
-
-        return future;
+        messagesCollection.whereEqualTo("conversationId", conversationId)
+                .orderBy("sentAt", Query.Direction.DESCENDING)
+                .limit(1)
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null || snapshots == null || snapshots.isEmpty())
+                        return;
+                    for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                        if (dc.getType() == DocumentChange.Type.ADDED) {
+                            onMessage.accept(dc.getDocument().toObject(Message.class));
+                        }
+                    }
+                });
     }
 }

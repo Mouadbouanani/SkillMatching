@@ -32,7 +32,7 @@ public class SecurityConfig {
                                     authException.getMessage());
                         }))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()) // DEBUG: Allow ALL temporarily to rule out Security blocking
+                        .anyRequest().permitAll())
                 .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

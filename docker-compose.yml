@@ -46,6 +46,7 @@ services:
     environment:
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
       - EUREKA_CLIENT_ENABLED=false
+      - REDIS_HOST=redis
     volumes:
       - ./api-gateway/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
     depends_on:
@@ -98,6 +99,8 @@ services:
     ports:
       - "8083:8083"
     environment:
+      - SPRING_APPLICATION_NAME=job-service
+      - SERVER_SERVLET_CONTEXT_PATH=/
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_USERNAME=${DB_USERNAME}
@@ -108,7 +111,7 @@ services:
       - EUREKA_CLIENT_ENABLED=false
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
     volumes:
-      - ./user-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+      - ./JobService/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
     depends_on:
       - kafka
     networks:

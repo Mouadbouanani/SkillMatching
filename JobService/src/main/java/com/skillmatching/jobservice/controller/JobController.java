@@ -14,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping
-@CrossOrigin(origins = "*")
 public class JobController {
 
     @Autowired

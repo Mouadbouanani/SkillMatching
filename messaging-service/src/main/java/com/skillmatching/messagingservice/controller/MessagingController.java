@@ -29,6 +29,8 @@ public class MessagingController {
 
     @PostMapping("/send")
     public CompletableFuture<ResponseEntity<Message>> sendMessageRest(@RequestBody Message message) {
+        System.out.println("📩 Received message to send: " + message.getText() + " from: " + message.getFromId()
+                + " in conv: " + message.getConversationId());
         return messagingService.sendMessage(message)
                 .thenApply(documentRef -> {
                     message.setId(documentRef.getId());
@@ -58,6 +60,24 @@ public class MessagingController {
                     } else {
                         return ResponseEntity.notFound().build();
                     }
+                });
+    }
+
+    @GetMapping("/conversations")
+    public CompletableFuture<ResponseEntity<List<com.skillmatching.messagingservice.entity.Conversation>>> getUserConversations(
+            @RequestParam String userId) {
+        // In a real app, userId should come from authentication token
+        return messagingService.getUserConversations(userId)
+                .thenApply(ResponseEntity::ok);
+    }
+
+    @PostMapping("/conversations")
+    public CompletableFuture<ResponseEntity<com.skillmatching.messagingservice.entity.Conversation>> createConversation(
+            @RequestBody com.skillmatching.messagingservice.entity.Conversation conversation) {
+        return messagingService.createConversation(conversation)
+                .thenApply(documentRef -> {
+                    conversation.setId(documentRef.getId());
+                    return ResponseEntity.ok(conversation);
                 });
     }
 

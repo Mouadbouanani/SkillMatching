@@ -1,7 +1,7 @@
 spring:
   application:
     name: job-service
-
+  
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${JOB_DB_NAME:job_service_db}${DB_PARAMS:?sslmode=disable}
     username: ${DB_USERNAME:neondb_owner}
@@ -30,5 +30,3 @@ eureka:
 
 server:
   port: 8083
-  servlet:
-    context-path: /api/jobs

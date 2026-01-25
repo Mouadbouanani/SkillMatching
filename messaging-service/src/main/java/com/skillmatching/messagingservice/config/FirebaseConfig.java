@@ -5,6 +5,7 @@ import com.google.cloud.firestore.Firestore;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,11 +17,14 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials-location:classpath:firebase-credentials.json}")
-    private String firebaseCredentialsLocation;
+    @Value("${firebase.credentials-path:classpath:firebase-credentials.json}")
+    private String firebaseCredentialsPath;
 
     @Value("${firebase.project-id:#{null}}")
     private String projectId;
+
+    @Autowired
+    private org.springframework.core.io.ResourceLoader resourceLoader;
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
@@ -28,13 +32,14 @@ public class FirebaseConfig {
             return FirebaseApp.getInstance();
         }
 
-        Resource resource = new ClassPathResource(firebaseCredentialsLocation.replace("classpath:", ""));
+        System.out.println("Loading Firebase credentials from: " + firebaseCredentialsPath);
+        Resource resource = resourceLoader.getResource(firebaseCredentialsPath);
         FirebaseOptions.Builder optionsBuilder = FirebaseOptions.builder();
 
         if (resource.exists()) {
             optionsBuilder.setCredentials(GoogleCredentials.fromStream(resource.getInputStream()));
         } else {
-            System.out.println("Firebase credentials file not found, attempting to use default credentials.");
+            System.err.println("CRITICAL: Firebase credentials file not found at " + firebaseCredentialsPath);
             optionsBuilder.setCredentials(GoogleCredentials.getApplicationDefault());
         }
 

@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
+import com.skillmatching.messagingservice.entity.Conversation;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,5 +39,15 @@ public class MessagingService implements MessagingServiceInterface {
     @Override
     public CompletableFuture<Message> markAsRead(String messageId) {
         return firestoreMessagingService.markAsRead(messageId);
+    }
+
+    @Override
+    public CompletableFuture<List<Conversation>> getUserConversations(String userId) {
+        return firestoreMessagingService.getUserConversations(userId);
+    }
+
+    @Override
+    public CompletableFuture<DocumentReference> createConversation(Conversation conversation) {
+        return firestoreMessagingService.createConversation(conversation);
     }
 }

@@ -22,13 +22,25 @@ public class SecurityConfig {
         public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
                 http
                                 .csrf(csrf -> csrf.disable())
+                                .sessionManagement(session -> session.sessionCreationPolicy(
+                                                org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(HttpMethod.GET, "/{jobId}").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/open").permitAll()
-                                                .requestMatchers(HttpMethod.GET, "/categories").permitAll()
-                                                .requestMatchers("/hello").permitAll()
-                                                .requestMatchers("/api/jobs/health").permitAll()
+                                                .requestMatchers("/health", "/api/jobs/health").permitAll()
+                                                .requestMatchers("/categories", "/api/jobs/categories").permitAll()
+                                                .requestMatchers("/open", "/api/jobs/open").permitAll()
+                                                .requestMatchers("/hello", "/api/jobs/hello").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/", "/api/jobs/").permitAll()
+                                                .requestMatchers(HttpMethod.GET, "/{jobId}", "/api/jobs/{jobId}")
+                                                .permitAll()
+                                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**",
+                                                                "/swagger-ui.html")
+                                                .permitAll()
+                                                .requestMatchers(HttpMethod.POST, "/create", "/api/jobs/create")
+                                                .authenticated()
+                                                .requestMatchers(HttpMethod.POST, "/apply", "/api/jobs/apply")
+                                                .authenticated()
+                                                .requestMatchers(HttpMethod.PUT, "/**").authenticated()
+                                                .requestMatchers(HttpMethod.DELETE, "/**").authenticated()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(
                                                 firebaseAuthenticationFilter,

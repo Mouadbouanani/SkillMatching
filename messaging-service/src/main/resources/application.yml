@@ -9,7 +9,7 @@ spring:
 
 # Firebase Configuration
 firebase:
-  credentials-location: classpath:firebase-service-account.json
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-credentials.json}
   project-id: ${FIREBASE_PROJECT_ID:skillmatching-86b8d}
 
 server:

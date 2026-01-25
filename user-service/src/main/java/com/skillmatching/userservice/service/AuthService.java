@@ -126,6 +126,9 @@ public class AuthService {
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
         dto.setFirebaseUid(user.getFirebaseUid());
+        dto.setDisplayName(user.getDisplayName());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setProfilePictureUrl(user.getProfilePictureUrl());
         dto.setRole(user.getRole().toString());
         dto.setEmailVerified(user.getEmailVerified());
         dto.setCreatedAt(user.getCreatedAt());

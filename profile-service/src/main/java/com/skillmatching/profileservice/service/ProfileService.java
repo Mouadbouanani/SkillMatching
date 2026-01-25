@@ -45,7 +45,6 @@ public class ProfileService {
         return saved;
     }
 
-    @Cacheable(value = "profiles", key = "#userId")
     public Profile getProfileByUserId(String userId) {
         return profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
@@ -64,7 +63,6 @@ public class ProfileService {
         return profileRepository.findBySkillNames(skillNames);
     }
 
-    @CacheEvict(value = "profiles", key = "#profileId")
     public Profile updateProfile(String profileId, Profile profileUpdate) {
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));
@@ -97,7 +95,6 @@ public class ProfileService {
         return updated;
     }
 
-    @CacheEvict(value = "profiles", allEntries = true)
     public void addSkill(String profileId, Skill skill) {
         Profile profile = profileRepository.findById(profileId)
                 .orElseThrow(() -> new RuntimeException("Profile not found"));

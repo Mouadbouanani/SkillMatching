@@ -32,5 +32,11 @@ public class JobSkill {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (requiredLevel == null) {
+            requiredLevel = 1; // Default to level 1
+        }
+        if (skillId == null) {
+            skillId = "unknown"; // Default ID if missing
+        }
     }
 }

@@ -37,11 +37,24 @@
         <spring-cloud.version>2023.0.0</spring-cloud.version>
         <firebase-admin.version>9.2.0</firebase-admin.version>
         <jjwt.version>0.12.3</jjwt.version>
+        <springdoc.version>2.3.0</springdoc.version>
     </properties>
 
     <!-- ==================== DEPENDENCY MANAGEMENT ==================== -->
     <dependencyManagement>
         <dependencies>
+            <!-- SpringDoc OpenAPI -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+
             <!-- Spring Cloud BOM -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
@@ -93,7 +106,6 @@
         </dependency>
     </dependencies>
 
-    <!-- ==================== BUILD CONFIGURATION ==================== -->
     <build>
         <plugins>
             <plugin>

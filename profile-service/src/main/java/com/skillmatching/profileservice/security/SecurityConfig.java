@@ -27,6 +27,9 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/actuator/health").permitAll()
                                                 .requestMatchers("/test/**").permitAll()
+                                                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**",
+                                                                "/swagger-ui.html")
+                                                .permitAll()
                                                 .anyRequest().authenticated())
                                 .addFilterBefore(
                                                 firebaseAuthenticationFilter,
