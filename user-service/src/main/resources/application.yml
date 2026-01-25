@@ -23,12 +23,14 @@ spring:
       password: admin
 eureka:
   client:
-    enabled: false
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
 
 server:
   port: 8081
-  servlet:
-    context-path: /api/users
 
 logging:
   level:
@@ -36,5 +38,5 @@ logging:
     com.skillmatch: DEBUG
 
 firebase:
-  credentials-path: ${FIREBASE_CREDENTIALS_PATH:file:config/firebase-credentials.json}
-  api-key: ${FIREBASE_API_KEY:}
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:classpath:firebase-service-account.json}
+  api-key: ${FIREBASE_API_KEY:AIzaSyBGP6evxQWvYyq0OwrOC6enJz5ZtzXOhZA}

@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin")
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/users/admin")
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 

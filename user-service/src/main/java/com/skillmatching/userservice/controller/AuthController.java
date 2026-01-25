@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping
-@CrossOrigin(origins = "*")
+@RequestMapping("/api/users")
 public class AuthController {
 
     @Autowired

@@ -41,11 +41,11 @@ server:
 # Service URLs for inter-service communication
 services:
   job-service:
-    url: ${JOB_SERVICE_URL:http://localhost:8083}
+    url: ${JOB_SERVICE_URL:http://job-service}
   profile-service:
-    url: ${PROFILE_SERVICE_URL:http://localhost:8082}
+    url: ${PROFILE_SERVICE_URL:http://profile-service}
   notification-service:
-    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+    url: ${NOTIFICATION_SERVICE_URL:http://notification-service}
 
 # Logging
 logging:
@@ -57,7 +57,11 @@ logging:
 # Eureka configuration
 eureka:
   client:
-    enabled: false
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
 
 # Matching Algorithm Configuration
 matching:

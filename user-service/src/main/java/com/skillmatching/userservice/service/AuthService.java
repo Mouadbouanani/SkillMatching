@@ -47,16 +47,35 @@ public class AuthService {
                 throw new RuntimeException("Erreur de connexion a Firebase");
             }
 
+            // Check if there's an error in the response
+            if (responseBody.containsKey("error")) {
+                java.util.Map<String, Object> error = (java.util.Map<String, Object>) responseBody.get("error");
+                String errorMessage = (String) error.get("message");
+                logger.error("Firebase authentication error: {}", errorMessage);
+                throw new RuntimeException("Echec de l'authentification : Email ou mot de passe incorrect");
+            }
+
             String idToken = (String) responseBody.get("idToken");
             String refreshToken = (String) responseBody.get("refreshToken");
             String uid = (String) responseBody.get("localId");
 
+            // Get user from database
             UserDTO userDto = getUserByFirebaseUid(uid);
 
             return new AuthResponse(idToken, refreshToken, uid, userDto);
-        } catch (Exception e) {
-            logger.error("Login Error: {}", e.getMessage());
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            logger.error("Firebase HTTP Error: {} - {}", e.getStatusCode(), e.getResponseBodyAsString());
             throw new RuntimeException("Echec de l'authentification : Email ou mot de passe incorrect");
+        } catch (RuntimeException e) {
+            if ("User non trouve".equals(e.getMessage())) {
+                logger.error("User found in Firebase but not in Database.");
+                throw new RuntimeException(
+                        "Echec de l'authentification : Compte existant dans Firebase mais introuvable dans la base de donnees locale.");
+            }
+            throw e;
+        } catch (Exception e) {
+            logger.error("Login Error: {}", e.getMessage(), e);
+            throw new RuntimeException("Echec de l'authentification : Erreur serveur interne (" + e.getMessage() + ")");
         }
     }
 
@@ -73,15 +92,15 @@ public class AuthService {
             firebaseUser = firebaseService.createUser(
                     request.getEmail(),
                     request.getPassword(),
-                    request.getEmail() // Use email as display name initially
+                    request.getDisplayName() // Use the provided display name
             );
 
             // Create database user
             User user = new User();
             user.setEmail(request.getEmail());
             user.setFirebaseUid(firebaseUser.getUid());
-            user.setDisplayName(request.getDisplayName());
-            user.setPhoneNumber(request.getPhoneNumber());
+            user.setDisplayName(request.getDisplayName()); // Set display name
+            user.setPhoneNumber(request.getPhoneNumber()); // Set phone number
             String roleStr = request.getRole() != null ? request.getRole() : "CLIENT";
             user.setRole(User.UserRole.valueOf(roleStr));
             user.setEmailVerified(false);
@@ -126,8 +145,11 @@ public class AuthService {
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
         dto.setFirebaseUid(user.getFirebaseUid());
+        dto.setDisplayName(user.getDisplayName()); // Include display name
+        dto.setPhoneNumber(user.getPhoneNumber()); // Include phone number
         dto.setRole(user.getRole().toString());
         dto.setEmailVerified(user.getEmailVerified());
+        dto.setProfilePictureUrl(user.getProfilePictureUrl()); // Include profile picture
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;

@@ -9,39 +9,52 @@ spring:
       filter:
         json-to-grpc:
           enabled: false
+      
       globalcors:
+        add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "https://localhost:*"
             allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
+              - "GET"
+              - "POST"
+              - "PUT"
+              - "DELETE"
+              - "OPTIONS"
+              - "PATCH"
             allowedHeaders: "*"
-            maxAge: 3600
-      
+            allowCredentials: true
+            exposedHeaders:
+              - "Authorization"
+              - "Content-Type"
+
       default-filters:
+        - name: DedupeResponseHeader
+          args:
+            name: Access-Control-Allow-Origin Access-Control-Allow-Credentials
+            strategy: RETAIN_LAST
         - name: Retry
           args:
             retries: 3
             methods: GET,POST
 
       routes:
-        # Public Auth Routes (No AuthenticationFilter)
+        # Public Auth Routes (NO AUTHENTICATION REQUIRED)
         - id: public-auth
-          uri: http://user-service:8081
+          uri: lb://user-service
           predicates:
-            - Path=/api/users/register, /api/users/login, /api/users/forgot-password, /api/users/health
+            - Path=/api/users/register,/api/users/login,/api/users/forgot-password,/api/users/health
           filters:
             - name: CircuitBreaker
               args:
                 name: authServiceCircuitBreaker
+                fallbackUri: forward:/fallback/auth
 
         # Protected User Service Routes
         - id: user-service
-          uri: http://user-service:8081
+          uri: lb://user-service
           predicates:
             - Path=/api/users/**
           filters:
@@ -52,7 +65,7 @@ spring:
 
         # Public Profile Routes
         - id: public-profiles
-          uri: http://profile-service:8082
+          uri: lb://profile-service
           predicates:
             - Path=/api/profiles/public/**, /api/profiles/health
           filters:
@@ -62,7 +75,7 @@ spring:
 
         # Protected Profile Service Routes
         - id: profile-service
-          uri: http://profile-service:8082
+          uri: lb://profile-service
           predicates:
             - Path=/api/profiles/**
           filters:
@@ -79,7 +92,7 @@ spring:
 
         # Public Job Routes
         - id: public-jobs
-          uri: http://job-service:8083
+          uri: lb://job-service
           predicates:
             - Path=/api/jobs/public/**, /api/jobs/all, /api/jobs/health, /api/info/categories
           filters:
@@ -89,7 +102,7 @@ spring:
 
         # Protected Job Service Routes
         - id: job-service
-          uri: http://job-service:8083
+          uri: lb://job-service
           predicates:
             - Path=/api/jobs/**
           filters:
@@ -106,7 +119,7 @@ spring:
 
         # Protected Matching Service Routes
         - id: matching-service
-          uri: http://matching-service:8084
+          uri: lb://matching-service
           predicates:
             - Path=/api/matches/**
           filters:
@@ -123,7 +136,7 @@ spring:
 
         # Protected Notification Service Routes
         - id: notification-service
-          uri: http://notification-service:8085
+          uri: lb://notification-service
           predicates:
             - Path=/api/notifications/**
           filters:
@@ -134,7 +147,7 @@ spring:
 
         # Protected Messaging Service Routes
         - id: messaging-service
-          uri: http://messaging-service:8086
+          uri: lb://messaging-service
           predicates:
             - Path=/api/messages/**
           filters:
@@ -155,11 +168,15 @@ resilience4j:
   timelimiter:
     configs:
       default:
-        timeoutDuration: 10s
+        timeoutDuration: 30s
 
 eureka:
   client:
-    enabled: false
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
 
 server:
   port: 8080

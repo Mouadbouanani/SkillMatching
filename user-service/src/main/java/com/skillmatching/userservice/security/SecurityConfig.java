@@ -26,10 +26,10 @@ public class SecurityConfig {
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/register").permitAll()
-                                                .requestMatchers("/login").permitAll()
-                                                .requestMatchers("/hello").permitAll()
-                                                .requestMatchers("/health").permitAll()
+                                                .requestMatchers("/api/users/register").permitAll()
+                                                .requestMatchers("/api/users/login").permitAll()
+                                                .requestMatchers("/api/users/hello").permitAll()
+                                                .requestMatchers("/api/users/health").permitAll()
                                                 .requestMatchers("/actuator/**").permitAll()
                                                 .requestMatchers("/error").permitAll()
                                                 .anyRequest().authenticated())

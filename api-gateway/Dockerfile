@@ -5,6 +5,7 @@ WORKDIR /app
 COPY pom.xml .
 
 # Copy all module POMs
+COPY eureka-server/pom.xml eureka-server/
 COPY api-gateway/pom.xml api-gateway/
 COPY user-service/pom.xml user-service/
 COPY profile-service/pom.xml profile-service/

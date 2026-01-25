@@ -13,7 +13,7 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials-path:classpath:firebase-credentials.json}")
+    @Value("${firebase.credentials-path:classpath:firebase-service-account.json}")
     private Resource credentialsResource;
 
     @Bean

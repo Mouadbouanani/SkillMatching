@@ -14,6 +14,9 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                // Enable CORS with default configuration - this ensures CORS is handled
+                // before other security filters in the Spring Security filter chain
+                .cors(cors -> cors.and())
                 .authorizeExchange(exchanges -> exchanges
                         .anyExchange().permitAll())
                 .build();

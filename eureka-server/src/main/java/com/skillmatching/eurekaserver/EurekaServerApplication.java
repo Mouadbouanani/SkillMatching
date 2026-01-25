@@ -1,5 +1,4 @@
-package com.collabspace.eurekaserver;
-
+package com.skillmatching.eurekaserver;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

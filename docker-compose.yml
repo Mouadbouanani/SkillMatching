@@ -1,5 +1,14 @@
 services:
   # Infrastructure (Local)
+  eureka-server:
+    build:
+      context: .
+      dockerfile: eureka-server/Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - skillmatch-network
+
   redis:
     image: redis:7-alpine
     ports:
@@ -45,10 +54,12 @@ services:
       - "8080:8080"
     environment:
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
-      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
     volumes:
       - ./api-gateway/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
     depends_on:
+      - eureka-server
       - user-service
       - profile-service
       - job-service
@@ -70,9 +81,12 @@ services:
       - USER_DB_NAME=${USER_DB_NAME}
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
-      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
     volumes:
       - ./user-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+    depends_on:
+      - eureka-server
     networks:
       - skillmatch-network
 
@@ -85,8 +99,10 @@ services:
     environment:
       - MONGODB_URI=${MONGODB_URI}
       - REDIS_HOST=redis
-      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
     depends_on:
+      - eureka-server
       - redis
     networks:
       - skillmatch-network
@@ -105,11 +121,13 @@ services:
       - DB_PARAMS=${DB_PARAMS}
       - JOB_DB_NAME=${JOB_DB_NAME}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
     volumes:
       - ./user-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
     depends_on:
+      - eureka-server
       - kafka
     networks:
       - skillmatch-network
@@ -128,10 +146,12 @@ services:
       - DB_PARAMS=${DB_PARAMS}
       - MATCHING_DB_NAME=${MATCHING_DB_NAME}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - EUREKA_CLIENT_ENABLED=false
-      - JOB_SERVICE_URL=http://job-service:8083
-      - PROFILE_SERVICE_URL=http://profile-service:8082
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
+      - JOB_SERVICE_URL=http://job-service
+      - PROFILE_SERVICE_URL=http://profile-service
     depends_on:
+      - eureka-server
       - kafka
     networks:
       - skillmatch-network
@@ -151,10 +171,12 @@ services:
       - NOTIFICATION_DB_NAME=${NOTIFICATION_DB_NAME}
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
-      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
     volumes:
       - ./notification-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
     depends_on:
+      - eureka-server
       - kafka
     networks:
       - skillmatch-network
@@ -167,9 +189,12 @@ services:
       - "8086:8086"
     environment:
       - FIREBASE_CREDENTIALS_PATH=file:/app/config/firebase-credentials.json
-      - EUREKA_CLIENT_ENABLED=false
+      - EUREKA_CLIENT_ENABLED=true
+      - EUREKA_SERVER_URL=http://eureka-server:8761/eureka/
     volumes:
       - ./messaging-service/src/main/resources/firebase-credentials.json:/app/config/firebase-credentials.json
+    depends_on:
+      - eureka-server
     networks:
       - skillmatch-network
 

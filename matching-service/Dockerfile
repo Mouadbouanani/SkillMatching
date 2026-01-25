@@ -1,6 +1,7 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
+COPY eureka-server/pom.xml eureka-server/
 COPY api-gateway/pom.xml api-gateway/
 COPY user-service/pom.xml user-service/
 COPY profile-service/pom.xml profile-service/

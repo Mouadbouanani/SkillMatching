@@ -1,0 +1,41 @@
+<div class="sidebar" *ngIf="router.url !== '/login'">
+  <div class="sidebar-header">
+    <div class="brand">
+      <i class="fas fa-layer-group"></i> SkillMatch
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li class="nav-item">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">
+        <i class="fas fa-chart-line"></i> Dashboard
+      </a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="/users" routerLinkActive="active" class="nav-link">
+        <i class="fas fa-users"></i> Users
+      </a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="/profiles" routerLinkActive="active" class="nav-link">
+        <i class="fas fa-id-card"></i> Profiles
+      </a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="/jobs" routerLinkActive="active" class="nav-link">
+        <i class="fas fa-briefcase"></i> Jobs
+      </a>
+    </li>
+    <li class="nav-item">
+      <a routerLink="/notifications" routerLinkActive="active" class="nav-link">
+        <i class="fas fa-bell"></i> Notifications
+      </a>
+    </li>
+  </ul>
+  <div class="p-6">
+    <p class="text-xs text-muted">© 2026 SkillMatch Admin</p>
+  </div>
+</div>
+
+<div [class.main-content]="router.url !== '/login'">
+  <router-outlet></router-outlet>
+</div>
