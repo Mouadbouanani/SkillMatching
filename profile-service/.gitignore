@@ -20,6 +20,12 @@ profile-service/src/main/resources/firebase-credentials.json
 *.iml
 *.ipr
 
+
+# Firebase / secrets
+**/firebase-service-account.json
+**/firebase-credentials.json
+**/*service-account*.json
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

@@ -23,6 +23,11 @@ target/
 *.iml
 *.ipr
 
+# Firebase / secrets
+**/firebase-credentials.json
+**/*service-account*.json
+
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
